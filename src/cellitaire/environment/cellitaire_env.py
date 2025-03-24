@@ -1,11 +1,11 @@
 # game/cellitaire_env.py
 
 import numpy as np
-from model.model_builder import ModelBuilder
-from cellitaire.game.card import Card  # Assumes your ModelBuilder is defined in model/model_builder.py
+from cellitaire.game.card import Card
+from cellitaire.game.game import Game  # Assumes your card is defined in model/model_builder.py
 
 class CellitaireEnv:
-    def __init__(self, config):
+    def __init__(self, config, reward):
         """
         Initialize the environment with a configuration dictionary.
         
@@ -20,6 +20,7 @@ class CellitaireEnv:
         self.prev_foundation_count = 0
         self.prev_legal_moves = 0
         self.prev_stockpile_count = 0
+        self.reward = reward
 
         # Set the number of reward features (default 6).
         self.num_reward_features = config.get("num_reward_features", 6)
@@ -32,10 +33,6 @@ class CellitaireEnv:
             }
         else:
             self.reward_weights = self.config["reward_weights"]
-        
-        # Create the network using the ModelBuilder.
-        # This network is built based on the provided config (e.g., card_representation, board dimensions, etc.)
-        self.network = ModelBuilder(config).build_model()
 
     def reset(self, rows=None, cols=None, initial_reserved=None):
         """
@@ -49,7 +46,6 @@ class CellitaireEnv:
         if initial_reserved is None:
             initial_reserved = self.config.get("initial_reserved", 6)
         
-        from game.game import Game  # Import here to avoid circular dependencies.
         self.game = Game()
         self.game.new_game(rows, cols, initial_reserved)
         
@@ -57,6 +53,12 @@ class CellitaireEnv:
         self.prev_foundation_count = self.game.foundation.total_cards()
         self.prev_legal_moves = self._compute_legal_moves_count()
         self.prev_stockpile_count = self.game.stockpile.count()
+
+        reward = 0
+        done = False
+        state = self.get_state()
+        info = {}
+        return state, reward, done, info
 
 
     def _compute_legal_moves_count(self):
@@ -227,6 +229,10 @@ class CellitaireEnv:
         full_state = np.concatenate([board_flat, stock_flat, foundation_flat])
         return full_state
     
+    def get_legal_actions(self):
+        special_coords, placeable_coords = self.game.board.get_special_slots()
+        return list(set( special_coords + placeable_coords))
+    
     def get_action(self, network_output):
         """
         Determines the action (coordinate) based on the network's output and a mask generated
@@ -380,7 +386,8 @@ class CellitaireEnv:
                 break
         return move_logs
 
-    def update_critic(self, )
+    def update_critic(self, value):
+        raise NotImplementedError
 
 
     def __str__(self):
