@@ -10,5 +10,6 @@ dependencies:
   - matplotlib
   - pytorch
   - gymnasium
+  - pygame
   # FOR CUDA ADD CUDA-TOOLKIT DEPENDENCY
 

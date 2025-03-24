@@ -48,6 +48,10 @@ class CellitaireEnv:
         if self.game.stockpile.count() > 0:
             legal_actions.update(placeable_coords)
         return list(legal_actions)
+    
+    def get_legal_actions_as_int(self):
+        legal_actions = self.get_legal_actions()
+        return [x * self.cols + y for x, y in legal_actions]
 
     def legal_actions_count(self):
         return len(self.get_legal_actions())
