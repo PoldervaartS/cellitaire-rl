@@ -1,5 +1,6 @@
-from cellitaire.game.game import Game
+from cellitaire.game.board import Board
 from cellitaire.game.stock_pile import StockPile
+from cellitaire.game.foundation import Foundation
 
 class Game:
     def __init__(self):
