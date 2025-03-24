@@ -1,0 +1,13 @@
+[project]
+name = "cellitaire"
+version = "0.0.1"
+description = "This is a Reinforcement Learning Environment for Cellitaire."
+
+dependencies = [
+    "numpy",
+]
+
+authors = [
+  {name = "Noe Balli"},
+  {name = "Shane Poldervaart", email = "shane.poldervaart@gmail.com"},
+]

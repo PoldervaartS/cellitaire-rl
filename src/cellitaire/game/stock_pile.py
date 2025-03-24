@@ -1,5 +1,6 @@
 import random
-from game.card import Card  # Assumes your Card class is defined in card.py
+
+from cellitaire.game.card import Card
 
 class StockPile:
     def __init__(self, cards):

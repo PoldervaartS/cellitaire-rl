@@ -1,4 +1,4 @@
-from game.slot import Slot
+from cellitaire.game.slot import Slot
 
 class Board:
     def __init__(self, rows: int, cols: int, initial_cards=None):

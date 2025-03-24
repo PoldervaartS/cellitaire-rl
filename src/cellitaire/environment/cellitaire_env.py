@@ -1,8 +1,8 @@
 # game/cellitaire_env.py
 
 import numpy as np
-from game.card import Card
-from model.model_builder import ModelBuilder  # Assumes your ModelBuilder is defined in model/model_builder.py
+from model.model_builder import ModelBuilder
+from cellitaire.game.card import Card  # Assumes your ModelBuilder is defined in model/model_builder.py
 
 class CellitaireEnv:
     def __init__(self, config):

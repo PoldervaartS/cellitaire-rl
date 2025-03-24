@@ -1,7 +1,6 @@
-from game.stock_pile import StockPile
-from game.board import Board
-from game.foundation import Foundation
-from game.card import Card
+
+from cellitaire.game.stock_pile import StockPile
+
 
 class Game:
     def __init__(self):

@@ -1,0 +1,13 @@
+name: cellitaire-rl
+channels:
+  - defaults
+  - conda-forge
+dependencies:
+  - python
+  - numpy
+  - ipykernel
+  - jupyter
+  - matplotlib
+  - pytorch
+  # FOR CUDA ADD CUDA-TOOLKIT DEPENDENCY
+
