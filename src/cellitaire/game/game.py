@@ -1,6 +1,5 @@
-
+from cellitaire.game.game import Game
 from cellitaire.game.stock_pile import StockPile
-
 
 class Game:
     def __init__(self):
