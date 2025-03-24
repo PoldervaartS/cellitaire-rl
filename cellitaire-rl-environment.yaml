@@ -9,5 +9,6 @@ dependencies:
   - jupyter
   - matplotlib
   - pytorch
+  - gymnasium
   # FOR CUDA ADD CUDA-TOOLKIT DEPENDENCY
 
