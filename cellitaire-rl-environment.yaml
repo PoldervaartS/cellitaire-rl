@@ -11,5 +11,6 @@ dependencies:
   - pytorch
   - gymnasium
   - pygame
+  - pytest
   # FOR CUDA ADD CUDA-TOOLKIT DEPENDENCY
 

@@ -27,6 +27,7 @@ class CellitaireEnv:
     def reset(self):
         self.game = Game()
         self.game.new_game(self.rows, self.cols, self.num_reserved)
+        self.reward.reset()
         
         # Initialize previous feature values.
         self.prev_foundation_count = self.game.foundation.total_cards()
@@ -38,9 +39,10 @@ class CellitaireEnv:
 
         reward = 0
         done = False
+        truncated = False
         state = self.get_state()
         info = {}
-        return state, reward, done, info
+        return state, reward, done, truncated, info
     
     def get_legal_actions(self):
         special_coords, placeable_coords = self.game.board.get_special_slots()
@@ -55,9 +57,6 @@ class CellitaireEnv:
 
     def legal_actions_count(self):
         return len(self.get_legal_actions())
-
-    def compute_reward(self):
-        return 1
     
     def get_board_state(self):
         return np.array([[slot.card.card_id if slot.card != None else 0 for slot in row] for row in self.game.board.slots])
@@ -84,37 +83,22 @@ class CellitaireEnv:
     
     def step(self, action):
         action = self.get_action_by_index(action)
-        if not self.game.board.can_change_slot(action):
-            self.num_illegal_moves += 1
-            # Illegal move: assign a penalty.
-            reward = -1
-            done = self.num_illegal_moves > self.max_illegal_moves
-            state = self.get_state()
-            info = {"illegal_move": True}
-            return state, reward, done, info
+        info = {}
 
         move_executed = self.game.make_move(action)
         if not move_executed:
             self.num_illegal_moves += 1
-            # Move execution failed; treat as illegal.
-            reward = -1
-            done = self.num_illegal_moves > self.max_illegal_moves
-            state = self.get_state()
             info = {"illegal_move": True}
-            return state, reward, done, info
-        
-        self.num_moves += 1
+        else:
+            self.num_moves += 1
 
-        reward = self.compute_reward()
-        # TODO: need to do truncate instead of just putting everything in done
-        done = self.legal_actions_count() < 1 or self.num_moves > self.max_moves
-        state = self.get_state()
+        new_state = self.get_state()
+        done = self.legal_actions_count() < 1
+        truncated = self.num_moves > self.max_moves or self.num_illegal_moves > self.max_illegal_moves
 
-        self.prev_foundation_count = self.game.foundation.total_cards()
-        self.prev_legal_moves = self.legal_actions_count()
-        self.prev_stockpile_count = self.game.stockpile.count()
+        reward = self.reward.calculate_reward(new_state, done, truncated, info)
         
-        return state, reward, done, None
+        return new_state, reward, done, truncated, info
     
     def get_action_by_index(self, action_index):
         row = action_index // self.cols
