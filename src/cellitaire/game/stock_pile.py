@@ -31,7 +31,7 @@ class StockPile:
         stock_cards = deck[reserve_n:]
         return cls(stock_cards), reserved_cards
 
-    def top_card(self):
+    def top_card(self) -> Card:
         """
         Returns the top card of the stock pile without removing it.
         
@@ -72,3 +72,6 @@ class StockPile:
 
     def __repr__(self):
         return self.__str__()
+    
+    def render(self):
+        return "\n".join(self.top_card().render()) + f" Count: {self.count()}"

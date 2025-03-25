@@ -1,3 +1,4 @@
+import numpy as np
 from cellitaire.game.card import Card  # Assumes your Card class is defined in card.py
 
 class Foundation:
@@ -48,7 +49,7 @@ class Foundation:
             return True
         return False
 
-    def get_current_card(self, suit: str):
+    def get_current_card(self, suit: str) -> Card:
         """
         Returns the current highest card in the foundation for a given suit.
         
@@ -89,3 +90,18 @@ class Foundation:
 
     def __repr__(self):
         return self.__str__()
+    
+    def render(self):
+        "Will be the 4 cards in a row rendered"
+
+        str_out = ""
+        card_renders = []
+        for i in range(4):
+            if self.get_current_card(i) is None:
+                card_renders.append(Card(0).render())
+            else:
+                card_renders.append(self.get_current_card(i).render())
+        # Transpose to make the rendering rows align
+        aligned_renders = np.array(card_renders).transpose()
+        str_out = '\n'.join(' '.join(row) for row in aligned_renders)
+        return str_out

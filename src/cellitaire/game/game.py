@@ -135,3 +135,9 @@ class Game:
             f"Moves Played: {self.total_moves_played()}\n"
             f"Total Cards in Foundation: {self.foundation_card_count()}"
         )
+    
+    def render(self):
+        """Print an Ascii Image of the current game state"""
+
+        # TODO render board, draw lines below foundation/basically whole board. 
+        return f"""{self.stockpile.render()}\n{self.foundation.render()}"""
