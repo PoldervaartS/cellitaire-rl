@@ -78,7 +78,8 @@ class CellitaireEnv:
         return np.concatenate((
             board_state.reshape(1, -1), 
             stockpile_state.reshape(1, -1), 
-            foundation_state.reshape(1, -1)
+            foundation_state.reshape(1, -1),
+            np.array([self.legal_actions_count()]).reshape(1, -1)
             ), axis=1).squeeze(0)
     
     def step(self, action):
