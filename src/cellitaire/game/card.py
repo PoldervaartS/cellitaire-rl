@@ -8,7 +8,7 @@ class Card:
         """
         Initialize a card given its unique integer id.
         """
-        if not 0 <= card_id <= 52:
+        if not 0 < card_id <= 52:
             raise ValueError("card_id must be between 1 and 52 or 0 for 'blank'")
         self.card_id = card_id
         # Convert the id into a zero-indexed value for calculations.
