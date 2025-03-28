@@ -116,6 +116,12 @@ class Game:
         :return: A list of (row, col) tuples.
         """
         return self.board.get_suffocated_or_lonely_coords()
+    
+    def get_possible_lonely_coords(self) -> list:
+        return self.board.get_lonely_coords()
+    
+    def get_possible_suffocated_coords(self) -> list:
+        return self.board.get_suffocated_coords()
 
     def get_possible_placeable_coords(self) -> list:
         """

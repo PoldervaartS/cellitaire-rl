@@ -54,33 +54,61 @@ class CellitaireEnv:
     def get_legal_actions_as_int(self):
         legal_actions = self.get_legal_actions()
         return [x * self.cols + y for x, y in legal_actions]
+    
+    def get_coords_map(self, coords):
+        if not coords:
+            return np.zeros(self.rows * self.cols, dtype=np.float32)
+        
+        coords = np.asarray(coords)
+        coords_as_int = coords[:, 0] * self.cols + coords[:, 1]
+        coords_map = np.zeros(self.rows * self.cols, dtype=np.float32)
+        coords_map[coords_as_int] = 1.0
+        return coords_map
+    
+    def get_lonely_coordinates_map(self):
+        return self.get_coords_map(self.game.get_possible_lonely_coords())
 
-    def legal_actions_count(self):
-        return len(self.get_legal_actions())
+    def get_suffocated_coordinates_map(self):
+        return self.get_coords_map(self.game.get_possible_suffocated_coords())
+    
+    def get_placeable_coordinates_map(self):
+        return self.get_coords_map(self.game.get_possible_placeable_coords())
     
     def get_board_state(self):
-        return np.array([[slot.card.card_id if slot.card != None else 0 for slot in row] for row in self.game.board.slots])
+        board_state = np.array(
+            [[slot.card.card_id if slot.card is not None else 0 for slot in row]
+            for row in self.game.board.slots],
+            dtype=np.float32
+        )
+        return board_state.flatten()
 
     def get_stockpile_state(self):
         top_card = self.game.stockpile.top_card()
-        return np.concatenate(
-            (np.array([top_card.card_id if top_card != None else 0], dtype=np.float32),
-            np.array([self.game.stockpile.count()], dtype=np.float32))
-        )
+        top_card_id = top_card.card_id if top_card is not None else 0
+        return np.array([top_card_id, self.game.stockpile.count()], dtype=np.float32)
 
     def get_foundation_state(self):
-        return np.array([Card.RANKS.index(card.rank) + 1 if card != None else 0 for _, card in self.game.foundation.foundation.items()], dtype=np.float32)
+        foundation_values = [
+            Card.RANKS.index(card.rank) + 1 if card is not None else 0 
+            for _, card in self.game.foundation.foundation.items()
+        ]
+        return np.array(foundation_values, dtype=np.float32)
 
     def get_state(self):
         board_state = self.get_board_state()
         stockpile_state = self.get_stockpile_state()
         foundation_state = self.get_foundation_state()
-        return np.concatenate((
-            board_state.reshape(1, -1), 
-            stockpile_state.reshape(1, -1), 
-            foundation_state.reshape(1, -1),
-            np.array([self.legal_actions_count()]).reshape(1, -1)
-            ), axis=1).squeeze(0)
+        lonely_coords_map = self.get_lonely_coordinates_map()
+        suffocated_coords_map = self.get_suffocated_coordinates_map()
+        placeable_coords_map = self.get_placeable_coordinates_map()
+        return np.hstack((
+            board_state,
+            stockpile_state,
+            foundation_state,
+            lonely_coords_map,
+            suffocated_coords_map,
+            placeable_coords_map,
+        ))
     
     def step(self, action):
         action = self.get_action_by_index(action)

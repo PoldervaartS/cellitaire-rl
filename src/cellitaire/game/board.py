@@ -113,6 +113,13 @@ class Board:
                             if not slot.has_card() and slot.is_placeable]
         return special_coords, placeable_coords
     
+    def get_lonely_coords(self) -> list:
+        return [slot.coordinate for row in self.slots for slot in row if slot.has_card() and slot.is_lonely]
+    
+    def get_suffocated_coords(self) -> list:
+        return [slot.coordinate for row in self.slots for slot in row if slot.has_card() and slot.is_suffocated]
+
+    
     def get_suffocated_or_lonely_coords(self) -> list:
         """
         Retrieves a list of coordinates for slots that are occupied and where the card is either lonely or suffocated.
