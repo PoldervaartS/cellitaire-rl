@@ -43,16 +43,6 @@ class WinReward(Reward):
     def calculate_reward(self, new_state: ndarray, done: bool, truncated: bool, info: any):
         return self.weight if done and get_cards_in_foundation(new_state) == 52 else 0
     
-class PlacedCardInFoundationReward(Reward):
-    def __init__(self, weight=1):
-        super().__init__(weight=weight)
-
-    def calculate_reward(self, new_state: ndarray, done: bool, truncated: bool, info: any):
-        num_cards_in_foundation = get_cards_in_foundation(new_state)
-        reward = self.weight if num_cards_in_foundation > self.prev_cards_in_foundation else 0
-        self.prev_cards_in_foundation = num_cards_in_foundation
-        return reward
-    
 class PlayedLegalMoveReward(Reward):
     def __init__(self, weight=1, num_reserved=6):
         super().__init__(weight=weight, num_reserved=num_reserved)
@@ -65,20 +55,6 @@ class PlayedLegalMoveReward(Reward):
         
         self.prev_cards_in_foundation = num_cards_in_foundation
         self.prev_cards_in_stockpile = num_cards_in_stockpile
-        return reward
-    
-class PeriodicPlacedCardInFoundationReward(Reward):
-    def __init__(self, weight=1, reward_period=2):
-        super().__init__(weight=weight)        
-        self.reward_period = reward_period
-
-    def calculate_reward(self, new_state: ndarray, done: bool, truncated: bool, info: any):
-        num_cards_in_foundation = get_cards_in_foundation(new_state)
-        self.prev_state = new_state
-        if num_cards_in_foundation <= self.prev_cards_in_foundation:
-            return 0
-        reward = self.weight if num_cards_in_foundation % self.reward_period else 0
-        self.prev_cards_in_foundation = num_cards_in_foundation
         return reward
     
 class TruncatedReward(Reward):
