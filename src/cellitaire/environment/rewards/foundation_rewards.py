@@ -28,7 +28,7 @@ class PeriodicPlacedCardInFoundationReward(Reward):
 
 class ScalingPlacedCardInFoundationReward(Reward):
     def __init__(self, weight=1, rows=7, cols=12):
-        super().__init__(weight, rows=rows, cols=cols, rows=7, cols=12)
+        super().__init__(weight, rows=rows, cols=cols)
 
     def calculate_reward(self, new_state: ndarray, done: bool, truncated: bool, info: any):
         num_cards_in_foundation = self.get_foundation_cards_count(new_state)

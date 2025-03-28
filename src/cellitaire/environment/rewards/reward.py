@@ -9,7 +9,7 @@ class Reward:
         self.foundation_start = self.stockpile_start + 2
         self.lonely_start = self.foundation_start + 4
         self.suffocated_start = self.lonely_start + rows * cols
-        self.placeable_start = self.placeable_start + rows * cols
+        self.placeable_start = self.suffocated_start + rows * cols
         self.num_reserved = num_reserved
         pass
 

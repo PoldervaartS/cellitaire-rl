@@ -6,9 +6,6 @@ from cellitaire.game.game import Game  # Assumes your card is defined in model/m
 class CellitaireEnv:
     def __init__(self, reward, rows = 7, cols = 12, num_reserved = 6, max_moves = 300, max_illegal_moves = 300):
         self.game = None
-        self.prev_foundation_count = 0
-        self.prev_legal_moves = 0
-        self.prev_stockpile_count = 0
         self.reward = reward
         self.rows = rows
         self.cols = cols
@@ -28,11 +25,6 @@ class CellitaireEnv:
         self.game = Game()
         self.game.new_game(self.rows, self.cols, self.num_reserved)
         self.reward.reset()
-        
-        # Initialize previous feature values.
-        self.prev_foundation_count = self.game.foundation.total_cards()
-        self.prev_legal_moves = self.legal_actions_count()
-        self.prev_stockpile_count = self.game.stockpile.count()
 
         self.num_moves = 0
         self.num_illegal_moves = 0
@@ -122,7 +114,7 @@ class CellitaireEnv:
             self.num_moves += 1
 
         new_state = self.get_state()
-        done = self.legal_actions_count() < 1
+        done = len(self.get_legal_actions()) < 1
         truncated = self.num_moves > self.max_moves or self.num_illegal_moves > self.max_illegal_moves
 
         reward = self.reward.calculate_reward(new_state, done, truncated, info)
