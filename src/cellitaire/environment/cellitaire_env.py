@@ -1,10 +1,14 @@
 import numpy as np
+import pygame
+import time
 from gymnasium import spaces
+from cellitaire.environment.ui.cellitaire_ui import CellitaireUI
 from cellitaire.game.card import Card
-from cellitaire.game.game import Game  # Assumes your card is defined in model/model_builder.py
+from cellitaire.game.game import Game
+from cellitaire.environment.ui.event_types import *
 
 class CellitaireEnv:
-    def __init__(self, reward, rows = 7, cols = 12, num_reserved = 6, max_moves = 300, max_illegal_moves = 300):
+    def __init__(self, reward, rows = 7, cols = 12, num_reserved = 6, max_moves = 300, max_illegal_moves = 300, render_mode=None, frame_rate=0.2):
         self.game = None
         self.reward = reward
         self.rows = rows
@@ -21,10 +25,18 @@ class CellitaireEnv:
         # TODO: this definitely isn't right
         self.observation_space = spaces.Box(low=0.0, high=53.0, shape=(1, rows * cols + 6)) 
 
+        self.render_mode = render_mode
+        self.ui = None
+        self.frame_rate = frame_rate
+
     def reset(self):
         self.game = Game()
         self.game.new_game(self.rows, self.cols, self.num_reserved)
         self.reward.reset()
+
+        if self.render_mode == 'human' and self.ui is not None:
+            self.publish_updates(0.0)
+            pygame.event.post(pygame.event.Event(RESET))
 
         self.num_moves = 0
         self.num_illegal_moves = 0
@@ -103,10 +115,10 @@ class CellitaireEnv:
         ))
     
     def step(self, action):
-        action = self.get_action_by_index(action)
+        move = self.get_action_by_index(action)
         info = {}
 
-        move_executed = self.game.make_move(action)
+        move_executed = self.game.make_move(move)
         if not move_executed:
             self.num_illegal_moves += 1
             info = {"illegal_move": True}
@@ -119,6 +131,9 @@ class CellitaireEnv:
 
         reward = self.reward.calculate_reward(new_state, done, truncated, info)
         
+        if self.render_mode == 'human' and self.ui is not None:
+            self.publish_updates(reward)
+
         return new_state, reward, done, truncated, info
     
     def get_action_by_index(self, action_index):
@@ -126,9 +141,35 @@ class CellitaireEnv:
         col = action_index % self.cols
         return (row, col)
     
-    # TODO: would be cool to have human rendering
+    def publish_updates(self, reward):
+        events = [
+            pygame.event.Event(
+                GU_SLOT_UPDATE,
+                coordinate=(i, j),
+                card=slot.card, 
+                is_lonenly=slot.is_lonely, 
+                is_suffocated=slot.is_suffocated,
+                is_placeable=slot.is_placeable
+            ) for i, row in enumerate(self.game.board.slots) for j, slot in enumerate(row)
+        ]
+        events.append(pygame.event.Event(GU_STOCKPILE_UPDATE, top_card=self.game.stockpile.top_card(), count=self.game.stockpile.count()))
+        events.append(pygame.event.Event(GU_FOUNDATION_UPDATE, foundation_dict=self.game.foundation.foundation, total_saved=self.game.foundation.total_cards())) 
+        events.append(pygame.event.Event(REWARD_UPDATED, reward=reward))
+        events.extend(pygame.event.get())
+
+        self.ui.add_events(events)
+
+        time.sleep(self.frame_rate)
+    
     def render(self):
-        return self.__str__()
+        if self.render_mode == 'human':
+            self.ui = CellitaireUI()
+            self.ui.start()
+        
+    def close(self):
+        if self.ui is not None:
+            self.ui.kill()
+            self.ui = None
 
     def __str__(self):
         return f"CellitaireEnv(game={self.game})"
