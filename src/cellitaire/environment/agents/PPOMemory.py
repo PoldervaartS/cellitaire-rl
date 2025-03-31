@@ -19,20 +19,26 @@ class PPOMemory:
         np.random.shuffle(indices)
         batches = [indices[i:i+self.batch_size] for i in batch_start]
 
-        return np.array(self.states), np.array(self.actions), np.array(self.probs), np.array(self.vals), np.array(self.rewards), np.array(self.dones), batches
-        
+        return np.array(self.states),\
+                np.array(self.actions),\
+                np.array(self.probs),\
+                np.array(self.vals),\
+                np.array(self.rewards),\
+                np.array(self.dones),\
+                batches
+
     def store_memory(self, state, action, probs, vals, reward, done):
         self.states.append(state)
+        self.actions.append(action)
         self.probs.append(probs)
         self.vals.append(vals)
         self.rewards.append(reward)
         self.dones.append(done)
-        self.actions.append(action)
 
     def clear_memory(self):
         self.states = []
         self.probs = []
-        self.vals = []
         self.actions = []
         self.rewards = []
         self.dones = []
+        self.vals = []
