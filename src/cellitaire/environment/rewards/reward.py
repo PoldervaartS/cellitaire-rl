@@ -12,6 +12,9 @@ class Reward:
         self.placeable_start = self.suffocated_start + rows * cols
         self.num_reserved = num_reserved
         pass
+    
+    def get_max_step_reward(self):
+        return self.weight
 
     def get_available_moves_count(self, state):
         return state[self.lonely_start:].sum().item()
@@ -82,6 +85,7 @@ class CreatedMovesReward(Reward):
 class CombinedReward(Reward):
     def __init__(self, rewards_list: List[Reward]):
         self.rewards_list = rewards_list
+        self.max_reward = self.get_max_step_reward()
     
     def calculate_reward(self, new_state: ndarray, done: bool, truncated: bool, info: any):
         return sum([reward.calculate_reward(new_state, done, truncated, info) for reward in self.rewards_list])
@@ -89,3 +93,6 @@ class CombinedReward(Reward):
     def reset(self):
         for reward in self.rewards_list:
             reward.reset()
+            
+    def get_max_step_reward(self):
+        return sum([reward.get_max_step_reward() for reward in self.rewards_list])
