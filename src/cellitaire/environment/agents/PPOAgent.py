@@ -15,8 +15,10 @@ class ActorNetwork(nn.Module):
         self.checkpoint_file = os.path.join(chkpt_dir, 'actor_torch_ppo')
         self.actor = nn.Sequential(
                 nn.Linear(*input_dims, fc1_dims),
+                nn.LayerNorm(fc1_dims),
                 nn.ReLU(),
                 nn.Linear(fc1_dims, fc2_dims),
+                nn.LayerNorm(fc2_dims),
                 nn.ReLU(),
                 nn.Linear(fc2_dims, n_actions),
                 nn.Softmax(dim=-1)
@@ -46,8 +48,10 @@ class CriticNetwork(nn.Module):
         self.checkpoint_file = os.path.join(chkpt_dir, 'critic_torch_ppo')
         self.critic = nn.Sequential(
                 nn.Linear(*input_dims, fc1_dims),
+                nn.LayerNorm(fc1_dims),
                 nn.ReLU(),
                 nn.Linear(fc1_dims, fc2_dims),
+                nn.LayerNorm(fc2_dims),
                 nn.ReLU(),
                 nn.Linear(fc2_dims, 1)
         )
@@ -69,15 +73,15 @@ class CriticNetwork(nn.Module):
 
 class Agent:
     def __init__(self, n_actions, input_dims, gamma=0.99, alpha=0.0003, gae_lambda=0.95,
-            policy_clip=0.2, batch_size=64, n_epochs=10):
+            policy_clip=0.2, batch_size=64, n_epochs=10, checkpoint_dir='tmp/ppo'):
         self.gamma = gamma
         self.policy_clip = policy_clip
         self.n_epochs = n_epochs
         self.gae_lambda = gae_lambda
         self.n_actions = n_actions
 
-        self.actor = ActorNetwork(n_actions, input_dims, alpha)
-        self.critic = CriticNetwork(input_dims, alpha)
+        self.actor = ActorNetwork(n_actions, input_dims, alpha, chkpt_dir=checkpoint_dir)
+        self.critic = CriticNetwork(input_dims, alpha, chkpt_dir=checkpoint_dir)
         self.memory = PPOMemory(batch_size)
        
     def remember(self, state, action, probs, vals, reward, done):
@@ -162,6 +166,8 @@ class Agent:
                 self.actor.optimizer.zero_grad()
                 self.critic.optimizer.zero_grad()
                 total_loss.backward()
+                nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1)
+                nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=1)
                 self.actor.optimizer.step()
                 self.critic.optimizer.step()
 

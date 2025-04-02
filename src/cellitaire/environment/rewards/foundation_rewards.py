@@ -36,3 +36,5 @@ class ScalingPlacedCardInFoundationReward(Reward):
         self.prev_cards_in_foundation = num_cards_in_foundation
         return reward
     
+    def get_max_step_reward(self):
+        return self.weight * 52
