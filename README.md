@@ -1,9 +1,26 @@
 # cellitaire-rl
-Reinforcement Learning Environment for the game Cellitaire
+Bot capable of solving a custom made Cellitaire Environment
+The goal of this project is to show and explore Reinforcement Learning Algorithms and their applications around a [game called Cellitaire](link). Where you play Solitaire but cards can only be placed by a format determined by a cellular automatae. 
 
-### This will not be following the Gymnasium spec exactly because I don't like it.
-- The goal is to solve/best-do cellitaire, not make it a benchmark environment. So custom reward shaping and other configuration options are here.
+In exploring these algorithms we have created a bot capable of a **X%** winrate over Y games
 
+Here you can see our bot performing after training
+[VIDEO OF 100% winrate bot]
+
+
+Here you can see the bot at initialization acting effectively randomly
+[video of brand-new agent 0 training steps. Effectively the random agent]
+
+We achieved these results after X training steps
+[SHOW TRAINING GRAPHS HERE. Which will be loss, avg reward, and some hyperparam sweeps maybe (showing regularization vs no regularization crashing)]
+
+The Succesful formula
+PPO - Regularization - Scaling Foundation Reward
+
+
+### This will not be following the Gymnasium spec exactly.
+- our goal is to create an environment to succeed in as opposed to establishing another Gym environment to benchmark algorithms
+    - Making Rewards editable and configurable as opposed to always the same rewards for an environment to allow reward shaping and other configuration.
 
 
 ## Setup
