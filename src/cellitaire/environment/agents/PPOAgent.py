@@ -72,7 +72,7 @@ class CriticNetwork(nn.Module):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
 class Agent:
-    def __init__(self, n_actions, input_dims, gamma=0.99, alpha=0.0003, gae_lambda=0.95,
+    def __init__(self, n_actions, input_dims, fc1_actor=1024, fc2_actor=1024, fc1_critic=2048, fc2_critic=2048, gamma=0.99, alpha=0.0003, gae_lambda=0.95,
             policy_clip=0.2, batch_size=64, n_epochs=10, checkpoint_dir='tmp/ppo'):
         self.gamma = gamma
         self.policy_clip = policy_clip
@@ -80,8 +80,8 @@ class Agent:
         self.gae_lambda = gae_lambda
         self.n_actions = n_actions
 
-        self.actor = ActorNetwork(n_actions, input_dims, alpha, chkpt_dir=checkpoint_dir)
-        self.critic = CriticNetwork(input_dims, alpha, chkpt_dir=checkpoint_dir)
+        self.actor = ActorNetwork(n_actions, input_dims, alpha, fc1_dims=fc1_actor, fc2_dims=fc2_actor, chkpt_dir=checkpoint_dir)
+        self.critic = CriticNetwork(input_dims, alpha, fc1_dims=fc1_critic, fc2_dims=fc2_critic, chkpt_dir=checkpoint_dir)
         self.memory = PPOMemory(batch_size)
        
     def remember(self, state, action, probs, vals, reward, done):
