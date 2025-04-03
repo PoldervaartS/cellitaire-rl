@@ -1,17 +1,16 @@
 # cellitaire-rl
 Bot capable of solving a custom made Cellitaire Environment
-The goal of this project is to show and explore Reinforcement Learning Algorithms and their applications around a [game called Cellitaire](link). Where you play Solitaire but cards can only be placed by a format determined by a cellular automatae. 
-
+The goal of this project is to show and explore Reinforcement Learning Algorithms and their applications around a [game called Cellitaire](https://marcosd.itch.io/cellitaire) made by Marcos Donnantuoni. Cellitaire is similar to Solitaire with the exception that in lieu of tableaus, cards are put in play through the rules of cellular automatae.
 In exploring these algorithms we have created a bot capable of a **X%** winrate over Y games
 
-Here you can see our bot performing after training
-[VIDEO OF 100% winrate bot]
+Here you can see a sample of our current best performing AI playing the game in our test environment
+https://github.com/user-attachments/assets/45e9ddd2-56ad-4036-9811-23bf3e68ddea
 
 
 Here you can see the bot at initialization acting effectively randomly
 [video of brand-new agent 0 training steps. Effectively the random agent]
 
-We achieved these results after X training steps
+We achieved these results after ~38000 training steps
 [SHOW TRAINING GRAPHS HERE. Which will be loss, avg reward, and some hyperparam sweeps maybe (showing regularization vs no regularization crashing)]
 
 The Succesful formula
