@@ -3,6 +3,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import time
 
 from cellitaire.environment.agents.PPOMemory import PPOMemory
 from torch.distributions.categorical import Categorical
@@ -35,10 +36,23 @@ class ActorNetwork(nn.Module):
         return dist
 
     def save_checkpoint(self):
-        torch.save(self.state_dict(), self.checkpoint_file)
+        retries = 0
+        while retries < 3:
+            try:
+                torch.save(self.state_dict(), self.checkpoint_file)
+                return
+            except:
+                retries += 1
 
     def load_checkpoint(self):
-        self.load_state_dict(torch.load(self.checkpoint_file))
+        retries = 0
+        while retries < 3:
+            try:
+                self.load_state_dict(torch.load(self.checkpoint_file))
+                return
+            except:
+                retries += 1
+            
         
 class CriticNetwork(nn.Module):
     def __init__(self, input_dims, alpha, fc1_dims=2048, fc2_dims=2048,
@@ -66,10 +80,22 @@ class CriticNetwork(nn.Module):
         return value
 
     def save_checkpoint(self):
-        torch.save(self.state_dict(), self.checkpoint_file)
+        retries = 0
+        while retries < 3:
+            try:
+                torch.save(self.state_dict(), self.checkpoint_file)
+                return
+            except:
+                retries += 1
 
     def load_checkpoint(self):
-        self.load_state_dict(torch.load(self.checkpoint_file))
+        retries = 0
+        while retries < 3:
+            try:
+                self.load_state_dict(torch.load(self.checkpoint_file))
+                return
+            except:
+                retries += 1
 
 class Agent:
     def __init__(self, n_actions, input_dims, fc1_actor=1024, fc2_actor=1024, fc1_critic=2048, fc2_critic=2048, gamma=0.99, alpha=0.0003, gae_lambda=0.95,
@@ -82,10 +108,6 @@ class Agent:
 
         self.actor = ActorNetwork(n_actions, input_dims, alpha, fc1_dims=fc1_actor, fc2_dims=fc2_actor, chkpt_dir=checkpoint_dir)
         self.critic = CriticNetwork(input_dims, alpha, fc1_dims=fc1_critic, fc2_dims=fc2_critic, chkpt_dir=checkpoint_dir)
-        self.memory = PPOMemory(batch_size)
-       
-    def remember(self, state, action, probs, vals, reward, done):
-        self.memory.store_memory(state, action, probs, vals, reward, done)
 
     def save_models(self):
         print('... saving models ...')
@@ -93,7 +115,6 @@ class Agent:
         self.critic.save_checkpoint()
 
     def load_models(self):
-        print('... loading models ...')
         self.actor.load_checkpoint()
         self.critic.load_checkpoint()
 
@@ -129,17 +150,18 @@ class Agent:
     
             return action, probs, value
 
-    def learn(self):
+    def learn(self, memory):
+        _, _, _, vals_arr, reward_arr, dones_arr, _ = memory.generate_batches()
+
+        rewards = torch.tensor(reward_arr, dtype=torch.float32, device=self.actor.device)
+        values = torch.tensor(vals_arr, dtype=torch.float32, device=self.actor.device)
+        dones = torch.tensor(dones_arr, dtype=torch.float32, device=self.actor.device)
+        advantage = compute_advantage(values, dones, rewards, self.gamma, self.gae_lambda)
+
+        
         for _ in range(self.n_epochs):
-            state_arr, action_arr, old_prob_arr, vals_arr,\
-            reward_arr, dones_arr, batches = \
-                    self.memory.generate_batches()
-
-            rewards = torch.tensor(reward_arr, dtype=torch.float32, device=self.actor.device)
-            values = torch.tensor(vals_arr, dtype=torch.float32, device=self.actor.device)
-            dones = torch.tensor(dones_arr, dtype=torch.float32, device=self.actor.device)
-            advantage = compute_advantage(values, dones, rewards, self.gamma, self.gae_lambda)
-
+            state_arr, action_arr, old_prob_arr, _, _, _, batches = memory.generate_batches()
+                    
             for batch in batches:
                 states = torch.tensor(state_arr[batch], dtype=torch.float).to(self.actor.device)
                 old_probs = torch.tensor(old_prob_arr[batch]).to(self.actor.device)
@@ -171,20 +193,19 @@ class Agent:
                 self.actor.optimizer.step()
                 self.critic.optimizer.step()
 
-        self.memory.clear_memory()               
-
 def compute_advantage(values, dones, rewards, gamma, gae_lambda):
+    T = len(rewards)
     advantage = torch.zeros_like(rewards, device=values.device)
-    T = len(rewards) - 1
-    discount = gamma * gae_lambda
-    discount_factors = discount ** torch.arange(T + 1, device=values.device, dtype=values.dtype)
-    for t in range(T):
-        discount_factors = discount_factors[:-1]
-        next_vs = values[t+1:]
-        masked = (1 - dones[t:-1]) * next_vs
-        discounted_mask = masked * gamma
-        discounted_mask_plus_rewards = rewards[t:-1] + discounted_mask
-        diff = discounted_mask_plus_rewards - values[t:-1]
-        discounted_diff = discount_factors * diff
-        advantage[t] = discounted_diff.sum()
+    
+    # Compute the temporal difference errors (delta)
+    # Note: Assuming dones is 0 or 1 so that (1-dones) is a mask.
+    delta = rewards[:-1] + gamma * values[1:] * (1 - dones[:-1]) - values[:-1]
+    
+    last_advantage = 0
+    # Loop backwards (from T-2 down to 0)
+    for t in reversed(range(T - 1)):
+        non_terminal = 1 - dones[t]
+        last_advantage = delta[t] + gamma * gae_lambda * non_terminal * last_advantage
+        advantage[t] = last_advantage
+    
     return advantage
