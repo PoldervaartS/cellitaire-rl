@@ -36,23 +36,10 @@ class ActorNetwork(nn.Module):
         return dist
 
     def save_checkpoint(self):
-        retries = 0
-        while retries < 3:
-            try:
-                torch.save(self.state_dict(), self.checkpoint_file)
-                return
-            except:
-                retries += 1
+        torch.save(self.state_dict(), self.checkpoint_file)
 
     def load_checkpoint(self):
-        retries = 0
-        while retries < 3:
-            try:
-                self.load_state_dict(torch.load(self.checkpoint_file))
-                return
-            except:
-                retries += 1
-            
+        self.load_state_dict(torch.load(self.checkpoint_file))
         
 class CriticNetwork(nn.Module):
     def __init__(self, input_dims, alpha, fc1_dims=2048, fc2_dims=2048,
@@ -80,22 +67,11 @@ class CriticNetwork(nn.Module):
         return value
 
     def save_checkpoint(self):
-        retries = 0
-        while retries < 3:
-            try:
-                torch.save(self.state_dict(), self.checkpoint_file)
-                return
-            except:
-                retries += 1
+        torch.save(self.state_dict(), self.checkpoint_file)
 
     def load_checkpoint(self):
-        retries = 0
-        while retries < 3:
-            try:
-                self.load_state_dict(torch.load(self.checkpoint_file))
-                return
-            except:
-                retries += 1
+        self.load_state_dict(torch.load(self.checkpoint_file, map_location='cpu'))
+        
 
 class Agent:
     def __init__(self, n_actions, input_dims, fc1_actor=1024, fc2_actor=1024, fc1_critic=2048, fc2_critic=2048, gamma=0.99, alpha=0.0003, gae_lambda=0.95,
@@ -151,17 +127,15 @@ class Agent:
             return action, probs, value
 
     def learn(self, memory):
-        _, _, _, vals_arr, reward_arr, dones_arr, _ = memory.generate_batches()
-
-        rewards = torch.tensor(reward_arr, dtype=torch.float32, device=self.actor.device)
-        values = torch.tensor(vals_arr, dtype=torch.float32, device=self.actor.device)
-        dones = torch.tensor(dones_arr, dtype=torch.float32, device=self.actor.device)
-        advantage = compute_advantage(values, dones, rewards, self.gamma, self.gae_lambda)
-
-        
         for _ in range(self.n_epochs):
-            state_arr, action_arr, old_prob_arr, _, _, _, batches = memory.generate_batches()
-                    
+            state_arr, action_arr, old_prob_arr, vals_arr, reward_arr, dones_arr, batches = memory.generate_batches()
+            
+            rewards = torch.tensor(reward_arr, dtype=torch.float32, device=self.actor.device)
+            values = torch.tensor(vals_arr, dtype=torch.float32, device=self.actor.device)
+            dones = torch.tensor(dones_arr, dtype=torch.float32, device=self.actor.device)
+            
+            advantage = compute_advantage(values, dones, rewards, self.gamma, self.gae_lambda)
+
             for batch in batches:
                 states = torch.tensor(state_arr[batch], dtype=torch.float).to(self.actor.device)
                 old_probs = torch.tensor(old_prob_arr[batch]).to(self.actor.device)

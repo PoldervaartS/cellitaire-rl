@@ -8,13 +8,14 @@ from cellitaire.environment.agents.PPOMemory import PPOMemory
 from cellitaire.environment.agents.PPOAgent import Agent
 
 class ExperienceCollector(multiprocessing.get_context().Process):
-    def __init__(self, agent, steps_to_post, batch_size, env, memory_queue, normalize_reward=False, stop_event=None):
+    def __init__(self, agent, steps_to_post, batch_size, env, memory_queue, model_io_lock, normalize_reward=False, stop_event=None):
         super().__init__()
-        self.agent = agent
+        self.agent = copy.deepcopy(agent)
         self.steps_to_post = steps_to_post
         self.batch_size = batch_size
         self.env = copy.deepcopy(env)
         self.memory_queue = memory_queue
+        self.model_io_lock = model_io_lock
         self.normalize_reward = normalize_reward
         self.memory = PPOMemory(batch_size)
         print('init exp coll')
@@ -33,6 +34,8 @@ class ExperienceCollector(multiprocessing.get_context().Process):
         print('starting exp collection')
         n_steps = 0
         while not self.stop_event.is_set():
+            with self.model_io_lock:
+                self.agent.load_models()
             self.env.reset()
             observation = self.env.get_state()
             done = False
@@ -55,12 +58,13 @@ class ExperienceCollector(multiprocessing.get_context().Process):
 
 
 class AgentPerformanceMonitor(multiprocessing.get_context().Process):
-    def __init__(self, agent, env, signal_queue, episodes_to_sim=100, normalize_reward=False, stop_event=None):
+    def __init__(self, agent, env, signal_queue, model_io_lock, episodes_to_sim=100, normalize_reward=False, stop_event=None):
         super().__init__()
         self.agent = copy.deepcopy(agent)
         self.agent.max_moves = 1200
         self.env = copy.deepcopy(env)
         self.signal_queue = signal_queue
+        self.model_io_lock = model_io_lock
         self.episodes_to_sim = episodes_to_sim
         self.normalize_reward = normalize_reward
         self.stop_event = stop_event or multiprocessing.Event()
@@ -79,7 +83,8 @@ class AgentPerformanceMonitor(multiprocessing.get_context().Process):
             scores = []
             cards_saved = []
             while episodes_simmed < self.episodes_to_sim:
-                self.agent.load_models()
+                with self.model_io_lock:
+                    self.agent.load_models()
                 self.env.reset()
                 observation = self.env.get_state()
                 done = False
@@ -126,19 +131,19 @@ class AgentTrainer:
         self.max_learn_steps = max_learn_steps
         self.performance_games_to_sim = performance_games_to_sim
         self.steps_between_performance_checks = steps_between_performance_checks
+        self.model_io_lock = multiprocessing.Lock()
 
     def start_training(self):
         collectors = []
         collector_stop_event = multiprocessing.Event()
-        agent_copy = copy.deepcopy(self.agent)
-        for _ in range(self.collector_processes):
-            c = ExperienceCollector(agent_copy, self.steps_to_post, self.batch_size, self.env,
-                                    self.memory_queue, self.normalize_reward, stop_event=collector_stop_event)
-            c.start()
-            collectors.append(c)
+        new_collector = ExperienceCollector(self.agent, self.steps_to_post, self.batch_size, self.env,
+                                    self.memory_queue, self.model_io_lock, self.normalize_reward, stop_event=collector_stop_event)
+        new_collector.start()
+        collectors.append(new_collector)
+        time.sleep(8)
 
         monitor_stop_event = multiprocessing.Event()
-        performance_monitor = AgentPerformanceMonitor(self.agent, self.env, self.monitor_signal_queue,
+        performance_monitor = AgentPerformanceMonitor(self.agent, self.env, self.monitor_signal_queue, model_io_lock=self.model_io_lock,
                                                         episodes_to_sim=self.performance_games_to_sim,
                                                         normalize_reward=self.normalize_reward,
                                                         stop_event=monitor_stop_event)
@@ -154,11 +159,19 @@ class AgentTrainer:
                 last_batch = time.time()
                 self.agent.learn(new_memory)
                 learn_steps += 1
-                if learn_steps % self.collector_processes == 0:
+                with self.model_io_lock:
                     self.agent.save_models()
-                    agent_copy.load_models()
-                if learn_steps % self.steps_between_performance_checks == 0:
+                if learn_steps % (self.collector_processes * 2) == 0:
                     self.monitor_signal_queue.put(learn_steps)
+                if len(collectors) < self.collector_processes:
+                    time.sleep(8)
+                    new_collector = ExperienceCollector(self.agent, self.steps_to_post, self.batch_size, self.env,
+                                    self.memory_queue, self.model_io_lock, self.normalize_reward, stop_event=collector_stop_event)
+                    new_collector.start()
+                    collectors.append(new_collector)
+
+                #if learn_steps % self.steps_between_performance_checks == 0:
+                    
                 if self.max_learn_steps != -1 and learn_steps >= self.max_learn_steps:
                     running = False
         finally:
