@@ -76,17 +76,27 @@ class CriticNetwork(nn.Module):
 class Agent:
     def __init__(self, n_actions, input_dims, fc1_actor=1024, fc2_actor=1024, fc1_critic=2048, fc2_critic=2048, gamma=0.99, alpha=0.0003, gae_lambda=0.95,
             policy_clip=0.2, batch_size=64, n_epochs=10, checkpoint_dir='tmp/ppo'):
-        self.gamma = gamma
-        self.policy_clip = policy_clip
-        self.n_epochs = n_epochs
-        self.gae_lambda = gae_lambda
         self.n_actions = n_actions
+        self.input_dims = input_dims
+        self.fc1_actor = fc1_actor
+        self.fc2_actor = fc2_actor
+        self.fc1_critic = fc1_critic
+        self.fc2_critic = fc2_critic
+        self.gamma = gamma
+        self.alpha = alpha
+        self.gamma = gamma
+        self.gae_lambda = gae_lambda
+        self.policy_clip = policy_clip
+        self.batch_size = batch_size
+        self.n_epochs = n_epochs
+        self.n_actions = n_actions
+        self.checkpoint_dir = checkpoint_dir
 
         self.actor = ActorNetwork(n_actions, input_dims, alpha, fc1_dims=fc1_actor, fc2_dims=fc2_actor, chkpt_dir=checkpoint_dir)
         self.critic = CriticNetwork(input_dims, alpha, fc1_dims=fc1_critic, fc2_dims=fc2_critic, chkpt_dir=checkpoint_dir)
 
     def save_models(self):
-        print('... saving models ...')
+        #print('... saving models ...')
         self.actor.save_checkpoint()
         self.critic.save_checkpoint()
 
@@ -127,15 +137,18 @@ class Agent:
             return action, probs, value
 
     def learn(self, memory):
+        _, _, _, vals_arr, reward_arr, dones_arr, _ = memory.generate_batches()
+        
+        rewards = torch.tensor(reward_arr, dtype=torch.float32, device=self.actor.device)
+        values = torch.tensor(vals_arr, dtype=torch.float32, device=self.actor.device)
+        dones = torch.tensor(dones_arr, dtype=torch.float32, device=self.actor.device)
+            
+        advantage = compute_advantage(values, dones, rewards, self.gamma, self.gae_lambda)
+        
+        losses = []
         for _ in range(self.n_epochs):
-            state_arr, action_arr, old_prob_arr, vals_arr, reward_arr, dones_arr, batches = memory.generate_batches()
+            state_arr, action_arr, old_prob_arr, _, _, _, batches = memory.generate_batches() 
             
-            rewards = torch.tensor(reward_arr, dtype=torch.float32, device=self.actor.device)
-            values = torch.tensor(vals_arr, dtype=torch.float32, device=self.actor.device)
-            dones = torch.tensor(dones_arr, dtype=torch.float32, device=self.actor.device)
-            
-            advantage = compute_advantage(values, dones, rewards, self.gamma, self.gae_lambda)
-
             for batch in batches:
                 states = torch.tensor(state_arr[batch], dtype=torch.float).to(self.actor.device)
                 old_probs = torch.tensor(old_prob_arr[batch]).to(self.actor.device)
@@ -159,14 +172,16 @@ class Agent:
                 critic_loss = critic_loss.mean()
 
                 total_loss = actor_loss + 0.5*critic_loss
+
                 self.actor.optimizer.zero_grad()
                 self.critic.optimizer.zero_grad()
                 total_loss.backward()
-                nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1)
-                nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=1)
+                #nn.utils.clip_grad_norm_(self.actor.parameters(), max_norm=1)
+                #nn.utils.clip_grad_norm_(self.critic.parameters(), max_norm=1)
                 self.actor.optimizer.step()
                 self.critic.optimizer.step()
-
+                losses.append(total_loss.item())
+        #print(f'Average loss {np.mean(losses)}')
 def compute_advantage(values, dones, rewards, gamma, gae_lambda):
     T = len(rewards)
     advantage = torch.zeros_like(rewards, device=values.device)
