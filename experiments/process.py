@@ -25,6 +25,8 @@ def get_agent_copy(agent: Agent):
         fc2_critic=agent.fc2_critic
     )
     
+    # Running into same issue mentioned here discuss.pytorch.org/t/pytorch-multiprocessing-with-cuda-sets-tensors-to-0/179117 when running with cuda
+    # Running with cpu works but is unbelievably slow as expected
     agent_copy.actor.device = torch.device('cpu')
     agent_copy.actor.to('cpu')
     agent_copy.critic.device = torch.device('cpu')
