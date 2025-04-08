@@ -1,16 +1,12 @@
-import time
-import numpy as np
 import os
-import torch
 
-from cellitaire.environment.agents.memory import PPOMemory
 from cellitaire.environment.agents.ppo_agent.agent import Agent
 
 
 class AgentTrainer:
     def __init__(
         self,
-        agent,
+        agent: Agent,
         env,
         checkpoint_dir,
         steps_per_learn_step=10000,
@@ -32,23 +28,25 @@ class AgentTrainer:
         self.normalize_reward = normalize_reward
         self.max_learn_steps = max_learn_steps
 
-    def start_training(self):
+    def train(self):
+        running = False
+        n_steps = 0
+        learning_iters = 0
         while running:
-            new_memory = self.memory_queue.get()
-            # print(f'Time since last batch {time.time() - last_batch}')
-            last_batch = time.time()
-            self.agent.learn(new_memory)
-            learn_steps += 1
-            with self.model_io_lock:
-                self.agent.save_models()
-            if learn_steps % (self.collector_processes * 3) == 0:
-                self.monitor_signal_queue.put(learn_steps)
-            if len(collectors) < self.collector_processes:
-                time.sleep(8)
-                new_collector = ExperienceCollector(self.agent, self.steps_to_post, self.batch_size, self.env,
-                                                    self.memory_queue, self.model_io_lock, self.normalize_reward, stop_event=collector_stop_event)
-                new_collector.start()
-                collectors.append(new_collector)
-
-            if self.max_learn_steps != -1 and learn_steps >= self.max_learn_steps:
-                running = False
+            self.env.reset()
+            observation = self.env.get_state()
+            done = False
+            truncated = False
+            while not done and not truncated:
+                n_steps += 1
+                action, prob, val = self.agent.choose_legal_action(
+                    observation, self.env.get_legal_actions_as_int())
+                observation_, reward, done, truncated, _ = self.env.step(
+                    action)
+                if self.normalize_reward:
+                    reward = reward / self.env.reward.max_reward
+                self.remember(observation, action, prob, val, reward, done)
+                if n_steps % self.steps_to_post == 0:
+                    self.agent.learn()
+                    learning_iters += 1
+                observation = observation_

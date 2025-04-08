@@ -112,13 +112,18 @@ class Agent:
             fc1_dims=fc1_critic,
             fc2_dims=fc2_critic,
             chkpt_dir=checkpoint_dir)
+        self.memory = PPOMemory(batch_size)
+
+    def remember(self, state, action, probs, vals, reward, done):
+        self.memory.store_memory(state, action, probs, vals, reward, done)
 
     def save_models(self):
-        # print('... saving models ...')
+        print('... saving models ...')
         self.actor.save_checkpoint()
         self.critic.save_checkpoint()
 
     def load_models(self):
+        print('... loading models ...')
         self.actor.load_checkpoint()
         self.critic.load_checkpoint()
 
@@ -139,7 +144,7 @@ class Agent:
 
         return action, probs, value
 
-    def choose_legal_action_mostly(self, observation, legal_actions):
+    def choose_legal_action(self, observation, legal_actions):
         with torch.no_grad():
             state = torch.tensor(
                 np.array(
@@ -162,8 +167,8 @@ class Agent:
 
             return action, probs, value
 
-    def learn(self, memory):
-        _, _, _, vals_arr, reward_arr, dones_arr, _ = memory.generate_batches()
+    def learn(self):
+        _, _, _, vals_arr, reward_arr, dones_arr, _ = self.memory.generate_batches()
 
         rewards = torch.tensor(
             reward_arr,
@@ -183,7 +188,7 @@ class Agent:
 
         losses = []
         for _ in range(self.n_epochs):
-            state_arr, action_arr, old_prob_arr, _, _, _, batches = memory.generate_batches()
+            state_arr, action_arr, old_prob_arr, _, _, _, batches = self.memory.generate_batches()
 
             for batch in batches:
                 states = torch.tensor(
@@ -223,7 +228,8 @@ class Agent:
                 self.actor.optimizer.step()
                 self.critic.optimizer.step()
                 losses.append(total_loss.item())
-        # print(f'Average loss {np.mean(losses)}')
+        print(f'Average loss {np.mean(losses)}')
+        self.memory.clear_memory()
 
 
 def compute_advantage(values, dones, rewards, gamma, gae_lambda):
