@@ -118,12 +118,12 @@ class Agent:
         self.memory.store_memory(state, action, probs, vals, reward, done)
 
     def save_models(self):
-        print('... saving models ...')
+        # print('... saving models ...')
         self.actor.save_checkpoint()
         self.critic.save_checkpoint()
 
     def load_models(self):
-        print('... loading models ...')
+        # print('... loading models ...')
         self.actor.load_checkpoint()
         self.critic.load_checkpoint()
 
@@ -228,7 +228,7 @@ class Agent:
                 self.actor.optimizer.step()
                 self.critic.optimizer.step()
                 losses.append(total_loss.item())
-        print(f'Average loss {np.mean(losses)}')
+        # print(f'Average loss {np.mean(losses)}')
         self.memory.clear_memory()
 
 
