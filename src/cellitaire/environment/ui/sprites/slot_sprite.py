@@ -2,10 +2,11 @@ import pygame
 from cellitaire.environment.ui.ui_element_constants import *
 from cellitaire.environment.ui.event_types import *
 
+
 class SlotSprite(pygame.sprite.Sprite):
     def __init__(self, height, width, x, y, coordinate):
         super().__init__()
-        
+
         self.image = pygame.Surface([width, height])
         self.rect = self.image.get_rect()
         self.rect.x = x
@@ -25,7 +26,14 @@ class SlotSprite(pygame.sprite.Sprite):
         self.draw_slot()
 
     def draw_background(self):
-        pygame.draw.rect(self.image, SLOT_BACKGROUND_COLOR, pygame.Rect(0, 0, self.width, self.height))
+        pygame.draw.rect(
+            self.image,
+            SLOT_BACKGROUND_COLOR,
+            pygame.Rect(
+                0,
+                0,
+                self.width,
+                self.height))
 
     def draw_outline(self):
         if not (self.is_lonely or self.is_suffocated or self.is_placeable):
@@ -36,12 +44,12 @@ class SlotSprite(pygame.sprite.Sprite):
             outline_color = SLOT_PLACEABLE_COLOR
 
         pygame.draw.rect(
-            self.image, 
-            outline_color, 
+            self.image,
+            outline_color,
             pygame.Rect(
-                0, 
-                0, 
-                self.width, 
+                0,
+                0,
+                self.width,
                 self.height
             ),
             SLOT_PADDING
@@ -54,16 +62,18 @@ class SlotSprite(pygame.sprite.Sprite):
             self.image,
             WHITE,
             pygame.Rect(
-                SLOT_PADDING, 
-                SLOT_PADDING, 
-                self.width - 2 * SLOT_PADDING, 
+                SLOT_PADDING,
+                SLOT_PADDING,
+                self.width - 2 * SLOT_PADDING,
                 self.height - 2 * SLOT_PADDING
             )
         )
 
         font = pygame.font.Font(None, 24)
         card_text = str(self.card)
-        text_surface = font.render(card_text, True, get_card_text_color(self.card))
+        text_surface = font.render(
+            card_text, True, get_card_text_color(
+                self.card))
         text_rect = text_surface.get_rect(center=card_rect.center)
         self.image.blit(text_surface, text_rect)
 
@@ -90,8 +100,11 @@ class SlotSprite(pygame.sprite.Sprite):
     def handle_clicked(self):
         if not (self.is_lonely or self.is_suffocated or self.is_placeable):
             return
-        pygame.event.post(pygame.event.Event(SLOT_CLICKED, coordinate=self.coordinate))
-    
+        pygame.event.post(
+            pygame.event.Event(
+                SLOT_CLICKED,
+                coordinate=self.coordinate))
+
     def update(self, events):
         mouse_pos = pygame.mouse.get_pos()
         if self.rect.collidepoint(mouse_pos):
@@ -100,7 +113,7 @@ class SlotSprite(pygame.sprite.Sprite):
             self.is_hovered = False
 
         for event in events:
-            if event.type == GU_SLOT_UPDATE and  event.coordinate == self.coordinate:
+            if event.type == GU_SLOT_UPDATE and event.coordinate == self.coordinate:
                 self.handle_slot_update_event(event)
             if self.is_hovered and event.type == pygame.MOUSEBUTTONUP:
                 self.handle_clicked()

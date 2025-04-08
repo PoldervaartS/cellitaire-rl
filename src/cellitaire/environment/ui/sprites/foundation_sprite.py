@@ -2,6 +2,7 @@ import pygame
 from cellitaire.environment.ui.ui_element_constants import *
 from cellitaire.environment.ui.event_types import *
 
+
 class FoundationSprite(pygame.sprite.Sprite):
     def __init__(self, height, width, x, y):
         super().__init__()
@@ -24,7 +25,14 @@ class FoundationSprite(pygame.sprite.Sprite):
         self.draw_foundation()
 
     def draw_background(self):
-        pygame.draw.rect(self.image, FOUNDATION_BACKGROUND_COLOR, pygame.Rect(0, 0, self.width, self.height))
+        pygame.draw.rect(
+            self.image,
+            FOUNDATION_BACKGROUND_COLOR,
+            pygame.Rect(
+                0,
+                0,
+                self.width,
+                self.height))
 
     def draw_card(self, x_offset, card):
         if card is None:
@@ -33,9 +41,9 @@ class FoundationSprite(pygame.sprite.Sprite):
             self.image,
             WHITE,
             pygame.Rect(
-                x_offset + FOUNDATION_PADDING, 
-                FOUNDATION_PADDING, 
-                self.width // 5 - 2 * FOUNDATION_PADDING, 
+                x_offset + FOUNDATION_PADDING,
+                FOUNDATION_PADDING,
+                self.width // 5 - 2 * FOUNDATION_PADDING,
                 self.height - 2 * FOUNDATION_PADDING
             )
         )
@@ -45,20 +53,20 @@ class FoundationSprite(pygame.sprite.Sprite):
         text_surface = font.render(card_text, True, get_card_text_color(card))
         text_rect = text_surface.get_rect(center=card_rect.center)
         self.image.blit(text_surface, text_rect)
-        
+
     def draw_pile_outline(self, x_offset):
         pygame.draw.rect(
-            self.image, 
-            FOUNDATION_PILE_OUTLINE_COLOR, 
+            self.image,
+            FOUNDATION_PILE_OUTLINE_COLOR,
             pygame.Rect(
-                x_offset, 
-                0, 
-                self.width // 5, 
+                x_offset,
+                0,
+                self.width // 5,
                 self.height
             ),
             FOUNDATION_PADDING
         )
-        
+
     def draw_cards(self):
         x_offset = self.width // 5
         step = x_offset
@@ -71,18 +79,19 @@ class FoundationSprite(pygame.sprite.Sprite):
         font = pygame.font.Font(None, 24)
         card_text = str(self.total_saved)
         text_surface = font.render(card_text, True, WHITE)
-        text_rect = text_surface.get_rect(center=(self.width // 10, self.height // 2))
+        text_rect = text_surface.get_rect(
+            center=(self.width // 10, self.height // 2))
         self.image.blit(text_surface, text_rect)
 
     def draw_foundation(self):
         self.draw_background()
         self.draw_cards()
         self.draw_total_saved()
-    
+
     def handle_foundation_update_event(self, event):
         self.foundation_dict = event.foundation_dict
         self.total_saved = event.total_saved
-    
+
     def update(self, events):
         for event in events:
             if event.type == GU_FOUNDATION_UPDATE:

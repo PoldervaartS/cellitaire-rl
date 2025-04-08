@@ -33,6 +33,7 @@ FOUNDATION_BACKGROUND_COLOR = BLACK
 
 BACKGROUND_COLOR = BLUE
 
+
 def get_card_text_color(card):
     return {
         's': BLACK,

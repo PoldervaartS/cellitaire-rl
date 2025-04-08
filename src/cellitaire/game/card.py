@@ -1,6 +1,7 @@
 class Card:
     # Define the order of suits and ranks.
-    # We'll use lowercase letters for suits: 's' = spades, 'h' = hearts, 'd' = diamonds, 'c' = clubs.
+    # We'll use lowercase letters for suits: 's' = spades, 'h' = hearts, 'd' =
+    # diamonds, 'c' = clubs.
     SUITS = ['s', 'h', 'd', 'c']
     RANKS = ['a', '2', '3', '4', '5', '6', '7', '8', '9', '10', 'j', 'q', 'k']
 
@@ -9,7 +10,8 @@ class Card:
         Initialize a card given its unique integer id.
         """
         if not 0 < card_id <= 52:
-            raise ValueError("card_id must be between 1 and 52 or 0 for 'blank'")
+            raise ValueError(
+                "card_id must be between 1 and 52 or 0 for 'blank'")
         self.card_id = card_id
         # Convert the id into a zero-indexed value for calculations.
         card_index = card_id - 1
@@ -53,9 +55,9 @@ class Card:
         Create a card from its integer id.
         """
         return cls(card_id)
-    
+
     @classmethod
-    def suit_to_ascii(cls, suit:str):
+    def suit_to_ascii(cls, suit: str):
         match suit:
             case 's':
                 return '♠'
@@ -85,7 +87,7 @@ class Card:
 
     def __hash__(self):
         return hash(self.card_id)
-    
+
     def render(self):
         # TODO color for the card. Will need to pass in the status from above.
         card_length = 6
@@ -95,12 +97,24 @@ class Card:
         for i in range(card_height):
             if i == 0:
                 array_strings_out.append(f""" {'_' * card_length} """)
-            elif i == card_height//2:
+            elif i == card_height // 2:
                 if self.card_id == 0:
-                    str_out = f"""|{' ' * (card_length//2 - 1)}  {' ' * (card_length//2 - 1)}|"""
+                    str_out = f"""|{' ' *
+                                    (card_length //
+                                     2 -
+                                     1)}  {' ' *
+                                           (card_length //
+                                            2 -
+                                            1)}|"""
                 # convert the suit to the ASCII
                 else:
-                    str_out = f"""|{' ' * (card_length//2 - 1)}{self.rank}{Card.suit_to_ascii(self.suit)}{' ' * (card_length//2 - 1)}|"""
+                    str_out = f"""|{' ' *
+                                    (card_length //
+                                     2 -
+                                     1)}{self.rank}{Card.suit_to_ascii(self.suit)}{' ' *
+                                                                                   (card_length //
+                                                                                    2 -
+                                                                                    1)}|"""
                 array_strings_out.append(str_out)
             elif i == card_height - 1:
                 array_strings_out.append(f"""|{'_' * card_length}|""")

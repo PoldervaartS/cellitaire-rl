@@ -1,4 +1,7 @@
 # app.py
+from game.cellitaire_env import CellitaireEnv
+import numpy as np
+from fastapi import FastAPI
 from fastapi import FastAPI, HTTPException
 import uuid
 import traceback
@@ -14,11 +17,9 @@ from tensorflow.keras.layers import Dense
 app = FastAPI()
 
 # app.py (or a separate file for your API endpoints)
-from fastapi import FastAPI
-import numpy as np
-from game.cellitaire_env import CellitaireEnv
 
 app = FastAPI()
+
 
 @app.get("/test_env")
 def test_env(num_moves: int = 15):
@@ -44,50 +45,63 @@ def test_env(num_moves: int = 15):
                 "r6": 1.0
             }
         }
-        
+
         # 2. Create a new environment and reset it.
         env = CellitaireEnv(config)
         env.reset()  # Uses defaults from config.
-        
+
         # 3. Retrieve the state and verify dimensions.
         state = env.get_state()
         board = np.array(state["board"])
         stock = np.array(state["stock"])
         foundation = np.array(state["foundation"])
-        
+
         rows = config["board_rows"]
         cols = config["board_cols"]
         card_rep = config.get("card_representation", "one_hot")
-        
+
         # Verify board dimensions.
         if card_rep == "one_hot":
             expected_board_shape = (rows, cols, 52)
             if board.shape != expected_board_shape:
-                raise Exception(f"Board shape incorrect: expected {expected_board_shape}, got {board.shape}")
+                raise Exception(
+                    f"Board shape incorrect: expected {expected_board_shape}, got {
+                        board.shape}")
         else:
             expected_board_shape = (rows, cols)
             if board.shape != expected_board_shape:
-                raise Exception(f"Board shape incorrect: expected {expected_board_shape}, got {board.shape}")
-        
+                raise Exception(
+                    f"Board shape incorrect: expected {expected_board_shape}, got {
+                        board.shape}")
+
         # Verify stock state dimensions.
         if card_rep == "one_hot":
             if stock.shape[0] != 53:
-                raise Exception(f"Stock state dimension incorrect: expected 53, got {stock.shape[0]}")
+                raise Exception(
+                    f"Stock state dimension incorrect: expected 53, got {
+                        stock.shape[0]}")
         else:
             if stock.shape[0] != 2:
-                raise Exception(f"Stock state dimension incorrect: expected 2, got {stock.shape[0]}")
-        
+                raise Exception(
+                    f"Stock state dimension incorrect: expected 2, got {
+                        stock.shape[0]}")
+
         # Verify foundation state dimensions.
         if card_rep == "one_hot":
             if foundation.shape != (4, 52):
-                raise Exception(f"Foundation state dimension incorrect: expected (4, 52), got {foundation.shape}")
+                raise Exception(
+                    f"Foundation state dimension incorrect: expected (4, 52), got {
+                        foundation.shape}")
         else:
             if foundation.shape[0] != 4:
-                raise Exception(f"Foundation state dimension incorrect: expected 4, got {foundation.shape[0]}")
-        
+                raise Exception(
+                    f"Foundation state dimension incorrect: expected 4, got {
+                        foundation.shape[0]}")
+
         # 4. Prepare inputs for the network.
         # The model expects three separate inputs: board, stock, foundation.
-        # For the board, we add a batch dimension and reshape to (1, rows*cols, 52).
+        # For the board, we add a batch dimension and reshape to (1, rows*cols,
+        # 52).
         if card_rep == "one_hot":
             board_input = board.reshape(1, rows * cols, 52)
             foundation_input = foundation.reshape(1, 4, 52)
@@ -96,7 +110,7 @@ def test_env(num_moves: int = 15):
             foundation_input = foundation.reshape(1, -1)
         stock_input = stock.reshape(1, -1)
         inputs = [board_input, stock_input, foundation_input]
-        
+
         # 5. Test a series of moves.
         move_logs = []
         for i in range(num_moves):
@@ -105,7 +119,7 @@ def test_env(num_moves: int = 15):
             board = np.array(state_dict["board"])
             stock = np.array(state_dict["stock"])
             foundation = np.array(state_dict["foundation"])
-            
+
             if card_rep == "one_hot":
                 board_input = board.reshape(1, rows * cols, 52)
                 foundation_input = foundation.reshape(1, 4, 52)
@@ -114,13 +128,14 @@ def test_env(num_moves: int = 15):
                 foundation_input = foundation.reshape(1, -1)
             stock_input = stock.reshape(1, -1)
             inputs = [board_input, stock_input, foundation_input]
-            
+
             # Get network output.
-            network_output = env.network.predict(inputs)[0]  # Shape: (rows*cols,)
-            
+            network_output = env.network.predict(
+                inputs)[0]  # Shape: (rows*cols,)
+
             # Determine action using our get_action function.
             action = env.get_action(network_output)
-            
+
             # Execute the step.
             new_state, reward, done, info = env.step(action)
             move_logs.append({
@@ -134,11 +149,13 @@ def test_env(num_moves: int = 15):
             })
             if done:
                 break
-        
+
         return {"passed": True, "move_logs": move_logs}
-    
+
     except Exception as e:
-        return {"passed": False, "error": str(e), "trace": traceback.format_exc()}
+        return {"passed": False, "error": str(
+            e), "trace": traceback.format_exc()}
+
 
 @app.get("/test_model_storage")
 def test_model_storage():
@@ -181,6 +198,7 @@ def test_model_storage():
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
 
 @app.get("/test_metadata")
 def test_metadata():

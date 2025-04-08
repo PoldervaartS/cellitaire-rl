@@ -2,11 +2,12 @@ import random
 
 from cellitaire.game.card import Card
 
+
 class StockPile:
     def __init__(self, cards):
         """
         Initializes the stock pile with a list of cards.
-        
+
         :param cards: A list of Card objects representing the stock pile.
         """
         self.cards = cards
@@ -16,7 +17,7 @@ class StockPile:
         """
         Creates a stock pile from a shuffled deck of 52 cards while reserving
         the top n cards for the board.
-        
+
         :param reserve_n: The number of cards to reserve for the board.
         :return: A tuple (stock_pile, reserved_cards)
                  where stock_pile is an instance of StockPile containing the remaining cards,
@@ -34,7 +35,7 @@ class StockPile:
     def top_card(self) -> Card:
         """
         Returns the top card of the stock pile without removing it.
-        
+
         :return: The Card object at the top, or None if the pile is empty.
         """
         if self.cards:
@@ -44,7 +45,7 @@ class StockPile:
     def draw_top_card(self):
         """
         Removes and returns the top card from the stock pile.
-        
+
         :return: The Card object that was drawn, or None if the pile is empty.
         """
         if self.cards:
@@ -54,7 +55,7 @@ class StockPile:
     def place_card_bottom(self, card):
         """
         Places a card at the bottom of the stock pile.
-        
+
         :param card: The Card object to be placed.
         """
         self.cards.append(card)
@@ -62,7 +63,7 @@ class StockPile:
     def count(self):
         """
         Returns the number of cards currently in the stock pile.
-        
+
         :return: An integer count of cards.
         """
         return len(self.cards)
@@ -72,6 +73,6 @@ class StockPile:
 
     def __repr__(self):
         return self.__str__()
-    
+
     def render(self):
         return "\n".join(self.top_card().render()) + f" Count: {self.count()}"

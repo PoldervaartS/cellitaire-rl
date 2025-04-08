@@ -2,27 +2,28 @@ class Slot:
     def __init__(self, card=None):
         """
         Initialize a Slot.
-        
+
         :param card: Optional initial card to place in the slot.
         """
         self.card = card
         self.is_lonely = False
         self.is_suffocated = False
-        self.is_placeable = False  # Indicates if a card can be placed (only applicable when empty)
+        # Indicates if a card can be placed (only applicable when empty)
+        self.is_placeable = False
 
     def update_status(self, num_neighbors: int):
         """
         Updates the slot's status based on the number of neighbors.
-        
+
         For a filled slot:
           - The card is lonely if it has fewer than 2 neighbors.
           - The card is suffocated if it has more than 3 neighbors.
           - A card cannot be placed in a slot that already has a card.
-          
+
         For an empty slot:
           - The slot is considered placeable if and only if it has exactly 3 neighbors.
           - Loneliness and suffocation do not apply to empty slots.
-          
+
         :param num_neighbors: The number of adjacent (horizontal, vertical, diagonal) neighbors.
         """
         if self.has_card():
@@ -31,7 +32,8 @@ class Slot:
             self.is_suffocated = num_neighbors > 3
             self.is_placeable = False  # Cannot place a card on a filled slot.
         else:
-            # For an empty slot, clear any previous status and set placeability.
+            # For an empty slot, clear any previous status and set
+            # placeability.
             self.clear_status()
             self.is_placeable = (num_neighbors == 3)
 
@@ -39,14 +41,15 @@ class Slot:
         """
         Places a card into the slot.
         A card can only be added if the slot is empty and is marked as placeable.
-        
+
         :param card: The card object to add.
         :raises ValueError: If the slot is already filled or not placeable.
         """
         if self.has_card():
             raise ValueError("Slot already has a card.")
         if not self.is_placeable:
-            raise ValueError("Card cannot be placed in this slot due to neighbor constraints.")
+            raise ValueError(
+                "Card cannot be placed in this slot due to neighbor constraints.")
         self.card = card
 
     def force_place_card(self, card):
@@ -54,9 +57,9 @@ class Slot:
         Force places a card into the slot without checking placement constraints.
         This is useful during board initialization when you want to set up the board
         regardless of whether the slot is normally placeable.
-        
+
         After forcing, the slot is considered occupied, and placement restrictions no longer apply.
-        
+
         :param card: The card object to place.
         """
         self.card = card
@@ -69,19 +72,21 @@ class Slot:
         """
         Removes the card from the slot.
         Also clears the slot's status.
-        
+
         :return: The removed card, or None if the slot was empty.
         """
         removed = self.card
         self.card = None
         self.clear_status()  # Clear lonely/suffocated flags.
-        self.is_placeable = False  # Reset placeable flag (to be updated externally based on neighbor count).
+        # Reset placeable flag (to be updated externally based on neighbor
+        # count).
+        self.is_placeable = False
         return removed
 
     def has_card(self):
         """
         Checks if there is a card in the slot.
-        
+
         :return: True if a card is present, False otherwise.
         """
         return self.card is not None
@@ -97,7 +102,7 @@ class Slot:
         """
         Determines if a card can be placed in the slot.
         A card can be placed only if the slot is empty and is marked as placeable.
-        
+
         :return: True if a card can be placed, False otherwise.
         """
         return not self.has_card() and self.is_placeable

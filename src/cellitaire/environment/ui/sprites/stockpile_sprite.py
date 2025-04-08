@@ -2,10 +2,11 @@ import pygame
 from cellitaire.environment.ui.ui_element_constants import *
 from cellitaire.environment.ui.event_types import *
 
+
 class StockpileSprite(pygame.sprite.Sprite):
     def __init__(self, height, width, x, y):
         super().__init__()
-        
+
         self.image = pygame.Surface([width, height])
         self.rect = self.image.get_rect()
         self.rect.x = x
@@ -21,19 +22,26 @@ class StockpileSprite(pygame.sprite.Sprite):
 
     def draw_stockpile_outline(self):
         pygame.draw.rect(
-            self.image, 
-            YELLOW, 
+            self.image,
+            YELLOW,
             pygame.Rect(
-                0, 
-                0, 
-                self.width // 2, 
+                0,
+                0,
+                self.width // 2,
                 self.height
             ),
             STOCKPILE_PADDING
         )
 
     def draw_background(self):
-        pygame.draw.rect(self.image, STOCKPILE_BACKGROUND_COLOR, pygame.Rect(0, 0, self.width, self.height))
+        pygame.draw.rect(
+            self.image,
+            STOCKPILE_BACKGROUND_COLOR,
+            pygame.Rect(
+                0,
+                0,
+                self.width,
+                self.height))
 
     def draw_card(self):
         if self.card is None:
@@ -43,16 +51,18 @@ class StockpileSprite(pygame.sprite.Sprite):
             self.image,
             WHITE,
             pygame.Rect(
-                STOCKPILE_PADDING, 
-                STOCKPILE_PADDING, 
-                (self.width // 2) - 2 * STOCKPILE_PADDING, 
+                STOCKPILE_PADDING,
+                STOCKPILE_PADDING,
+                (self.width // 2) - 2 * STOCKPILE_PADDING,
                 self.height - 2 * STOCKPILE_PADDING
             )
         )
-        
+
         font = pygame.font.Font(None, 24)
         card_text = str(self.card)
-        text_surface = font.render(card_text, True, get_card_text_color(self.card))
+        text_surface = font.render(
+            card_text, True, get_card_text_color(
+                self.card))
         text_rect = text_surface.get_rect(center=card_rect.center)
         self.image.blit(text_surface, text_rect)
 
@@ -60,9 +70,10 @@ class StockpileSprite(pygame.sprite.Sprite):
         font = pygame.font.Font(None, 24)
         card_text = str(self.count)
         text_surface = font.render(card_text, True, WHITE)
-        text_rect = text_surface.get_rect(center=(3 * self.width // 4, self.height // 2))
+        text_rect = text_surface.get_rect(
+            center=(3 * self.width // 4, self.height // 2))
         self.image.blit(text_surface, text_rect)
-        
+
     def draw_stockpile(self):
         self.draw_background()
         self.draw_stockpile_outline()

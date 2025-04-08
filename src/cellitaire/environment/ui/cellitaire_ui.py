@@ -10,6 +10,7 @@ import queue
 
 FRAME_RATE = 30
 
+
 class CellitaireUI(threading.Thread):
     def __init__(self, rows=7, cols=12):
         super().__init__()
@@ -23,41 +24,41 @@ class CellitaireUI(threading.Thread):
             x=SCREEN_MARGIN,
             y=SCREEN_MARGIN
         ))
-    
+
         self.all_sprites.add(FoundationSprite(
             height=FOUNDATION_HEIGHT,
             width=FOUNDATION_WIDTH,
             x=SCREEN_MARGIN + SLOT_WIDTH * cols - FOUNDATION_WIDTH,
             y=SCREEN_MARGIN
         ))
-    
+
         self.all_sprites.add(RewardSprite(
             height=SLOT_HEIGHT,
             width=SLOT_WIDTH,
             x=SCREEN_MARGIN + SLOT_WIDTH * cols - FOUNDATION_WIDTH - 2 * SLOT_WIDTH,
             y=SCREEN_MARGIN
         ))
-    
+
         for i in range(rows):
-          for j in range(cols):
-              self.all_sprites.add(
-                  SlotSprite(
-                      height=SLOT_HEIGHT,
-                      width=SLOT_WIDTH, 
-                      x=SCREEN_MARGIN + j * SLOT_WIDTH, 
-                      y=SCREEN_MARGIN + STOCKPILE_HEIGHT + BOARD_MARGIN + i * SLOT_HEIGHT,
-                      coordinate=(i, j)
-                  )
-              )
-    
+            for j in range(cols):
+                self.all_sprites.add(
+                    SlotSprite(
+                        height=SLOT_HEIGHT,
+                        width=SLOT_WIDTH,
+                        x=SCREEN_MARGIN + j * SLOT_WIDTH,
+                        y=SCREEN_MARGIN + STOCKPILE_HEIGHT + BOARD_MARGIN + i * SLOT_HEIGHT,
+                        coordinate=(i, j)
+                    )
+                )
+
         self.rows = rows
         self.cols = cols
-    
+
         self.clock = pygame.time.Clock()
         self.running = True
         self.screen = pygame.display.set_mode(SCREEN_DIMS)
         pygame.display.set_caption("Cellitaire RL")
-    
+
         self.event_queue = queue.Queue()
 
     def add_events(self, events):
@@ -66,7 +67,7 @@ class CellitaireUI(threading.Thread):
 
     def _step(self, events):
         self.all_sprites.update(events)
-    
+
     def _draw(self):
         self.screen.fill(BACKGROUND_COLOR)
         self.all_sprites.draw(self.screen)

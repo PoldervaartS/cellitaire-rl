@@ -2,6 +2,7 @@ import pygame
 from cellitaire.environment.ui.ui_element_constants import *
 from cellitaire.environment.ui.event_types import *
 
+
 class RewardSprite(pygame.sprite.Sprite):
     def __init__(self, height, width, x, y):
         super().__init__()
@@ -17,7 +18,9 @@ class RewardSprite(pygame.sprite.Sprite):
         self.total_reward = 0
 
     def draw_reward(self):
-        r = pygame.draw.rect(self.image, BLACK, pygame.Rect(0, 0, self.width, self.height))
+        r = pygame.draw.rect(
+            self.image, BLACK, pygame.Rect(
+                0, 0, self.width, self.height))
 
         font = pygame.font.Font(None, 24)
         score_text = f'Reward: {str(self.total_reward)}'

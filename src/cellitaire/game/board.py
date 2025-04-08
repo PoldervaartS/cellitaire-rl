@@ -1,5 +1,6 @@
 from cellitaire.game.slot import Slot
 
+
 class Board:
     def __init__(self, rows: int, cols: int, initial_cards=None):
         """
@@ -7,7 +8,7 @@ class Board:
         Each board cell is a Slot object stored in a matrix (list of lists).
         Optionally, an array of initial cards can be provided to be placed
         in a single row at the center of the board.
-        
+
         :param rows: Number of rows on the board (assumed to be odd).
         :param cols: Number of columns on the board.
         :param initial_cards: Optional list of card objects to initialize the board.
@@ -15,34 +16,36 @@ class Board:
         self.rows = rows
         self.cols = cols
         self.slots = [[Slot() for _ in range(cols)] for _ in range(rows)]
-        
+
         # Assign coordinates to each slot for easy reference.
         for r in range(rows):
             for c in range(cols):
                 self.slots[r][c].coordinate = (r, c)
-        
+
         if initial_cards is not None:
-            # Determine the center row (since rows is odd, this is unambiguous).
+            # Determine the center row (since rows is odd, this is
+            # unambiguous).
             center_row = rows // 2
             num_cards = len(initial_cards)
             # Center the initial cards horizontally.
             start_col = (cols - num_cards) // 2
             placed_coords = []
-            
+
             # Force place each initial card in the center row.
             for i, card in enumerate(initial_cards):
                 coord = (center_row, start_col + i)
                 self.slots[center_row][start_col + i].force_place_card(card)
                 placed_coords.append(coord)
-            
-            # Collect all coordinates that are either occupied or adjacent to an occupied slot.
+
+            # Collect all coordinates that are either occupied or adjacent to
+            # an occupied slot.
             all_coords_to_touch = set(placed_coords)
             for coord in placed_coords:
                 for neighbor in self.get_neighbors(coord):
                     # Only add empty neighbor slots.
                     if not self.slots[neighbor[0]][neighbor[1]].has_card():
                         all_coords_to_touch.add(neighbor)
-            
+
             # Touch every slot in the collected set to update its status.
             for coord in all_coords_to_touch:
                 self.touch(coord)
@@ -71,7 +74,7 @@ class Board:
         neighbors = self.get_neighbors(coordinate)
         count = sum(1 for nr, nc in neighbors if self.slots[nr][nc].has_card())
         self.slots[coordinate[0]][coordinate[1]].update_status(count)
-    
+
     def place_card(self, coordinate: tuple, card):
         """
         Places a card at the given coordinate.
@@ -85,7 +88,7 @@ class Board:
         self.touch(coordinate)
         for neighbor in self.get_neighbors(coordinate):
             self.touch(neighbor)
-    
+
     def remove_card(self, coordinate: tuple):
         """
         Removes the card from the slot at the given coordinate.
@@ -99,7 +102,7 @@ class Board:
         for neighbor in self.get_neighbors(coordinate):
             self.touch(neighbor)
         return removed
-    
+
     def get_special_slots(self) -> tuple:
         """
         Retrieves two lists:
@@ -112,33 +115,34 @@ class Board:
         placeable_coords = [slot.coordinate for row in self.slots for slot in row
                             if not slot.has_card() and slot.is_placeable]
         return special_coords, placeable_coords
-    
-    def get_lonely_coords(self) -> list:
-        return [slot.coordinate for row in self.slots for slot in row if slot.has_card() and slot.is_lonely]
-    
-    def get_suffocated_coords(self) -> list:
-        return [slot.coordinate for row in self.slots for slot in row if slot.has_card() and slot.is_suffocated]
 
-    
+    def get_lonely_coords(self) -> list:
+        return [slot.coordinate for row in self.slots for slot in row if slot.has_card(
+        ) and slot.is_lonely]
+
+    def get_suffocated_coords(self) -> list:
+        return [slot.coordinate for row in self.slots for slot in row if slot.has_card(
+        ) and slot.is_suffocated]
+
     def get_suffocated_or_lonely_coords(self) -> list:
         """
         Retrieves a list of coordinates for slots that are occupied and where the card is either lonely or suffocated.
-        
+
         :return: A list of (row, col) tuples.
         """
-        return [slot.coordinate for row in self.slots for slot in row 
+        return [slot.coordinate for row in self.slots for slot in row
                 if slot.has_card() and (slot.is_lonely or slot.is_suffocated)]
-    
+
     def get_placeable_coords(self) -> list:
         """
         Retrieves a list of coordinates where a card can be placed.
         A card can be placed if the slot is empty and is marked as placeable.
-        
+
         :return: A list of (row, col) tuples.
         """
-        return [slot.coordinate for row in self.slots for slot in row 
+        return [slot.coordinate for row in self.slots for slot in row
                 if not slot.has_card() and slot.is_placeable]
-    
+
     def any_moves_possible(self) -> bool:
         """
         Indicates whether any moves remain on the board.
@@ -149,17 +153,17 @@ class Board:
         """
         special_coords, placeable_coords = self.get_special_slots()
         return len(special_coords) > 0 or len(placeable_coords) > 0
-    
+
     def has_card_at(self, coordinate: tuple) -> bool:
         """
         Checks if the slot at the given coordinate has a card.
-        
+
         :param coordinate: A tuple (row, col) indicating the slot to check.
         :return: True if the slot contains a card, False otherwise.
         """
         r, c = coordinate
         return self.slots[r][c].has_card()
-    
+
     def can_change_slot(self, coordinate: tuple) -> bool:
         """
         Determines if the slot at the given coordinate can be changed.
@@ -167,7 +171,7 @@ class Board:
           - It is occupied and the card is lonely or suffocated.
           OR
           - It is empty and a card can be placed in it (i.e. is marked as placeable).
-        
+
         :param coordinate: A tuple (row, col) indicating the slot to check.
         :return: True if the slot can be changed, False otherwise.
         """

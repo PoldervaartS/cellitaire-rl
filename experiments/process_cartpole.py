@@ -11,6 +11,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.distributions.categorical import Categorical
 
+
 class PPOMemory:
     def __init__(self, batch_size):
         self.states = []
@@ -27,15 +28,15 @@ class PPOMemory:
         batch_start = np.arange(0, n_states, self.batch_size)
         indices = np.arange(n_states, dtype=np.int64)
         np.random.shuffle(indices)
-        batches = [indices[i:i+self.batch_size] for i in batch_start]
+        batches = [indices[i:i + self.batch_size] for i in batch_start]
 
-        return np.array(self.states),\
-                np.array(self.actions),\
-                np.array(self.probs),\
-                np.array(self.vals),\
-                np.array(self.rewards),\
-                np.array(self.dones),\
-                batches
+        return np.array(self.states), \
+            np.array(self.actions), \
+            np.array(self.probs), \
+            np.array(self.vals), \
+            np.array(self.rewards), \
+            np.array(self.dones), \
+            batches
 
     def store_memory(self, state, action, probs, vals, reward, done):
         self.states.append(state)
@@ -53,29 +54,31 @@ class PPOMemory:
         self.dones = []
         self.vals = []
 
+
 class ActorNetwork(nn.Module):
     def __init__(self, n_actions, input_dims, alpha,
-            fc1_dims=256, fc2_dims=256, chkpt_dir='tmp/ppo'):
+                 fc1_dims=256, fc2_dims=256, chkpt_dir='tmp/ppo'):
         super(ActorNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'actor_torch_ppo')
         self.actor = nn.Sequential(
-                nn.Linear(*input_dims, fc1_dims),
-                nn.ReLU(),
-                nn.Linear(fc1_dims, fc2_dims),
-                nn.ReLU(),
-                nn.Linear(fc2_dims, n_actions),
-                nn.Softmax(dim=-1)
+            nn.Linear(*input_dims, fc1_dims),
+            nn.ReLU(),
+            nn.Linear(fc1_dims, fc2_dims),
+            nn.ReLU(),
+            nn.Linear(fc2_dims, n_actions),
+            nn.Softmax(dim=-1)
         )
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device(
+            'cuda:0' if torch.cuda.is_available() else 'cpu')
         self.to(self.device)
 
     def forward(self, state):
         dist = self.actor(state)
         dist = Categorical(dist)
-        
+
         return dist
 
     def save_checkpoint(self):
@@ -84,22 +87,24 @@ class ActorNetwork(nn.Module):
     def load_checkpoint(self):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
+
 class CriticNetwork(nn.Module):
     def __init__(self, input_dims, alpha, fc1_dims=256, fc2_dims=256,
-            chkpt_dir='tmp/ppo'):
+                 chkpt_dir='tmp/ppo'):
         super(CriticNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'critic_torch_ppo')
         self.critic = nn.Sequential(
-                nn.Linear(*input_dims, fc1_dims),
-                nn.ReLU(),
-                nn.Linear(fc1_dims, fc2_dims),
-                nn.ReLU(),
-                nn.Linear(fc2_dims, 1)
+            nn.Linear(*input_dims, fc1_dims),
+            nn.ReLU(),
+            nn.Linear(fc1_dims, fc2_dims),
+            nn.ReLU(),
+            nn.Linear(fc2_dims, 1)
         )
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
-        self.device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+        self.device = torch.device(
+            'cuda:0' if torch.cuda.is_available() else 'cpu')
         self.to(self.device)
 
     def forward(self, state):
@@ -113,9 +118,10 @@ class CriticNetwork(nn.Module):
     def load_checkpoint(self):
         self.load_state_dict(torch.load(self.checkpoint_file))
 
+
 class Agent:
     def __init__(self, n_actions, input_dims, gamma=0.99, alpha=0.0003, gae_lambda=0.95,
-            policy_clip=0.2, batch_size=64, n_epochs=10):
+                 policy_clip=0.2, batch_size=64, n_epochs=10):
         self.n_actions = n_actions
         self.input_dims = input_dims
         self.gamma = gamma
@@ -128,7 +134,7 @@ class Agent:
         self.actor = ActorNetwork(n_actions, input_dims, alpha)
         self.critic = CriticNetwork(input_dims, alpha)
         self.memory = PPOMemory(batch_size)
-       
+
     def remember(self, state, action, probs, vals, reward, done):
         self.memory.store_memory(state, action, probs, vals, reward, done)
 
@@ -143,7 +149,10 @@ class Agent:
         self.critic.load_checkpoint()
 
     def choose_action(self, observation):
-        state = torch.tensor([observation], dtype=torch.float).to(self.actor.device)
+        state = torch.tensor(
+            [observation],
+            dtype=torch.float).to(
+            self.actor.device)
 
         dist = self.actor(state)
         value = self.critic(state)
@@ -157,19 +166,34 @@ class Agent:
 
     def learn(self, memory):
         _, _, _, vals_arr, reward_arr, dones_arr, _ = memory.generate_batches()
-        
-        rewards = torch.tensor(reward_arr, dtype=torch.float32, device=self.actor.device)
-        values = torch.tensor(vals_arr, dtype=torch.float32, device=self.actor.device)
-        dones = torch.tensor(dones_arr, dtype=torch.float32, device=self.actor.device)
 
-        advantage = compute_advantage(values, dones, rewards, self.gamma, self.gae_lambda)
-        
+        rewards = torch.tensor(
+            reward_arr,
+            dtype=torch.float32,
+            device=self.actor.device)
+        values = torch.tensor(
+            vals_arr,
+            dtype=torch.float32,
+            device=self.actor.device)
+        dones = torch.tensor(
+            dones_arr,
+            dtype=torch.float32,
+            device=self.actor.device)
+
+        advantage = compute_advantage(
+            values, dones, rewards, self.gamma, self.gae_lambda)
+
         losses = np.array([])
         for _ in range(self.n_epochs):
-            state_arr, action_arr, old_prob_arr, _, _, _, batches = memory.generate_batches() 
+            state_arr, action_arr, old_prob_arr, _, _, _, batches = memory.generate_batches()
             for batch in batches:
-                states = torch.tensor(state_arr[batch], dtype=torch.float).to(self.actor.device)
-                old_probs = torch.tensor(old_prob_arr[batch]).to(self.actor.device)
+                states = torch.tensor(
+                    state_arr[batch],
+                    dtype=torch.float).to(
+                    self.actor.device)
+                old_probs = torch.tensor(
+                    old_prob_arr[batch]).to(
+                    self.actor.device)
                 actions = torch.tensor(action_arr[batch]).to(self.actor.device)
 
                 dist = self.actor(states)
@@ -179,17 +203,18 @@ class Agent:
 
                 new_probs = dist.log_prob(actions)
                 prob_ratio = new_probs.exp() / old_probs.exp()
-                #prob_ratio = (new_probs - old_probs).exp()
+                # prob_ratio = (new_probs - old_probs).exp()
                 weighted_probs = advantage[batch] * prob_ratio
-                weighted_clipped_probs = torch.clamp(prob_ratio, 1-self.policy_clip,
-                        1+self.policy_clip)*advantage[batch]
-                actor_loss = -torch.min(weighted_probs, weighted_clipped_probs).mean()
+                weighted_clipped_probs = torch.clamp(prob_ratio, 1 - self.policy_clip,
+                                                     1 + self.policy_clip) * advantage[batch]
+                actor_loss = -torch.min(weighted_probs,
+                                        weighted_clipped_probs).mean()
 
                 returns = advantage[batch] + values[batch]
-                critic_loss = (returns-critic_value)**2
+                critic_loss = (returns - critic_value)**2
                 critic_loss = critic_loss.mean()
 
-                total_loss = actor_loss + 0.5*critic_loss
+                total_loss = actor_loss + 0.5 * critic_loss
                 self.actor.optimizer.zero_grad()
                 self.critic.optimizer.zero_grad()
                 total_loss.backward()
@@ -197,42 +222,48 @@ class Agent:
                 self.critic.optimizer.step()
                 losses = np.append(losses, total_loss.item())
         print(f'Average Loss: {losses.mean()}')
+
+
 def compute_advantage(values, dones, rewards, gamma, gae_lambda):
     T = len(rewards)
     advantage = torch.zeros_like(rewards, device=values.device)
-    
+
     delta = rewards[:-1] + gamma * values[1:] * (1 - dones[:-1]) - values[:-1]
-    
+
     last_advantage = 0
     for t in reversed(range(T - 1)):
         non_terminal = 1 - dones[t]
-        last_advantage = delta[t] + gamma * gae_lambda * non_terminal * last_advantage
+        last_advantage = delta[t] + gamma * \
+            gae_lambda * non_terminal * last_advantage
         advantage[t] = last_advantage
-    
+
     return advantage
+
 
 def get_agent_copy(agent: Agent):
     agent_copy = Agent(
-        n_actions=agent.n_actions, 
-        input_dims=agent.input_dims, 
+        n_actions=agent.n_actions,
+        input_dims=agent.input_dims,
         gamma=agent.gamma,
-        alpha=agent.alpha, 
+        alpha=agent.alpha,
         gae_lambda=agent.gae_lambda,
-        policy_clip=agent.policy_clip, 
-        batch_size=agent.batch_size, 
+        policy_clip=agent.policy_clip,
+        batch_size=agent.batch_size,
         n_epochs=agent.n_epochs,
         checkpoint_dir=agent.checkpoint_dir
     )
-    
+
     agent_copy.actor.device = torch.device('cpu')
     agent_copy.actor.to('cpu')
     agent_copy.critic.device = torch.device('cpu')
     agent_copy.critic.to('cpu')
-    
+
     return agent_copy
 
+
 class ExperienceCollector(mp.get_context().Process):
-    def __init__(self, agent, steps_to_post, batch_size, env, memory_queue, model_io_lock, normalize_reward=False, stop_event=None):
+    def __init__(self, agent, steps_to_post, batch_size, env, memory_queue,
+                 model_io_lock, normalize_reward=False, stop_event=None):
         super().__init__()
         self.agent = get_agent_copy(agent)
         self.steps_to_post = steps_to_post
@@ -243,7 +274,6 @@ class ExperienceCollector(mp.get_context().Process):
         self.normalize_reward = normalize_reward
         self.memory = PPOMemory(batch_size)
         self.stop_event = stop_event or mp.Event()
-
 
     def post_experiences(self):
         self.memory_queue.put(self.memory)
@@ -265,7 +295,8 @@ class ExperienceCollector(mp.get_context().Process):
                     break
                 n_steps += 1
                 action, prob, val = self.agent.choose_action(observation)
-                observation_, reward, done, truncated, info = self.env.step(action)
+                observation_, reward, done, truncated, info = self.env.step(
+                    action)
                 self.remember(observation, action, prob, val, reward, done)
                 if n_steps % self.steps_to_post == 0:
                     self.post_experiences()
@@ -304,7 +335,7 @@ class AgentTrainer:
         collectors = []
         collector_stop_event = mp.Event()
         new_collector = ExperienceCollector(self.agent, self.steps_to_post, self.batch_size, self.env,
-                                    self.memory_queue, self.model_io_lock, self.normalize_reward, stop_event=collector_stop_event)
+                                            self.memory_queue, self.model_io_lock, self.normalize_reward, stop_event=collector_stop_event)
         new_collector.start()
         collectors.append(new_collector)
         time.sleep(8)
@@ -329,10 +360,10 @@ class AgentTrainer:
                 if len(collectors) < self.collector_processes:
                     time.sleep(8)
                     new_collector = ExperienceCollector(self.agent, self.steps_to_post, self.batch_size, self.env,
-                                    self.memory_queue, self.model_io_lock, self.normalize_reward, stop_event=collector_stop_event)
+                                                        self.memory_queue, self.model_io_lock, self.normalize_reward, stop_event=collector_stop_event)
                     new_collector.start()
                     collectors.append(new_collector)
-                    
+
                 if self.max_learn_steps != -1 and learn_steps >= self.max_learn_steps:
                     running = False
         finally:

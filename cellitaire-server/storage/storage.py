@@ -17,6 +17,7 @@ engine = create_engine(DATABASE_URL)
 SessionLocal = sessionmaker(bind=engine)
 Base = declarative_base()
 
+
 class ModelMetadata(Base):
     __tablename__ = "models"
     id = Column(Integer, primary_key=True, index=True)
@@ -26,10 +27,13 @@ class ModelMetadata(Base):
     metrics = Column(JSON)
     created_at = Column(DateTime, default=datetime.datetime.utcnow)
 
+
 # This will create the "models" table in your database if it doesn't exist
 Base.metadata.create_all(bind=engine)
 
-def create_metadata(model_id: str, file_path: str, parameters: dict = None, metrics: dict = None):
+
+def create_metadata(model_id: str, file_path: str,
+                    parameters: dict = None, metrics: dict = None):
     db = SessionLocal()
     try:
         metadata = ModelMetadata(
@@ -45,18 +49,22 @@ def create_metadata(model_id: str, file_path: str, parameters: dict = None, metr
     finally:
         db.close()
 
+
 def get_metadata(model_id: str):
     db = SessionLocal()
     try:
-        metadata = db.query(ModelMetadata).filter(ModelMetadata.model_id == model_id).first()
+        metadata = db.query(ModelMetadata).filter(
+            ModelMetadata.model_id == model_id).first()
         return metadata
     finally:
         db.close()
 
+
 def delete_metadata(model_id: str):
     db = SessionLocal()
     try:
-        metadata = db.query(ModelMetadata).filter(ModelMetadata.model_id == model_id).first()
+        metadata = db.query(ModelMetadata).filter(
+            ModelMetadata.model_id == model_id).first()
         if metadata:
             db.delete(metadata)
             db.commit()
@@ -66,10 +74,12 @@ def delete_metadata(model_id: str):
         db.close()
 
 
-def update_metadata(model_id: str, parameters: dict = None, metrics: dict = None):
+def update_metadata(model_id: str, parameters: dict = None,
+                    metrics: dict = None):
     db = SessionLocal()
     try:
-        metadata = db.query(ModelMetadata).filter(ModelMetadata.model_id == model_id).first()
+        metadata = db.query(ModelMetadata).filter(
+            ModelMetadata.model_id == model_id).first()
         if metadata is None:
             return None
         if parameters is not None:
