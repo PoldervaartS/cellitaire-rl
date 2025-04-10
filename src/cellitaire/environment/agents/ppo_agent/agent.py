@@ -1,30 +1,46 @@
+import json
 import os
 import numpy as np
 import torch
 import torch.nn as nn
 import torch.optim as optim
 import time
+from dataclasses import asdict, dataclass, field
+from typing import List
 
 from cellitaire.environment.agents.memory import PPOMemory
 from torch.distributions.categorical import Categorical
 
 
 class ActorNetwork(nn.Module):
-    def __init__(self, n_actions, input_dims, alpha,
-                 fc1_dims=1024, fc2_dims=1024, chkpt_dir='tmp/ppo'):
+    def __init__(
+            self,
+            n_actions,
+            input_dims,
+            alpha,
+            layer_1_dim=1024,
+            hidden_layer_dims=[1024],
+            chkpt_dir='tmp/ppo'
+    ):
         super(ActorNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'actor_torch_ppo')
-        self.actor = nn.Sequential(
-            nn.Linear(*input_dims, fc1_dims),
-            nn.LayerNorm(fc1_dims),
-            nn.ReLU(),
-            nn.Linear(fc1_dims, fc2_dims),
-            nn.LayerNorm(fc2_dims),
-            nn.ReLU(),
-            nn.Linear(fc2_dims, n_actions),
-            nn.Softmax(dim=-1)
-        )
+
+        module_list = []
+        module_list.append(nn.Linear(*input_dims, layer_1_dim))
+        module_list.append(nn.LayerNorm(layer_1_dim))
+        module_list.append(nn.ReLU())
+        previous_dim = layer_1_dim
+
+        for dim in hidden_layer_dims:
+            module_list.append(nn.Linear(previous_dim, dim))
+            module_list.append(nn.LayerNorm(dim))
+            module_list.append(nn.ReLU())
+            previous_dim = dim
+
+        module_list.append(nn.Linear(hidden_layer_dims[-1], *n_actions))
+        module_list.append(nn.Softmax(dim=-1))
+        self.actor = nn.Sequential(*module_list)
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
         self.device = torch.device(
@@ -45,20 +61,34 @@ class ActorNetwork(nn.Module):
 
 
 class CriticNetwork(nn.Module):
-    def __init__(self, input_dims, alpha, fc1_dims=2048, fc2_dims=2048,
-                 chkpt_dir='tmp/ppo'):
+    def __init__(
+            self,
+            input_dims,
+            alpha,
+            layer_1_dim=2048,
+            hidden_layer_dims=[2048],
+            chkpt_dir='tmp/ppo'
+    ):
         super(CriticNetwork, self).__init__()
 
         self.checkpoint_file = os.path.join(chkpt_dir, 'critic_torch_ppo')
-        self.critic = nn.Sequential(
-            nn.Linear(*input_dims, fc1_dims),
-            nn.LayerNorm(fc1_dims),
-            nn.ReLU(),
-            nn.Linear(fc1_dims, fc2_dims),
-            nn.LayerNorm(fc2_dims),
-            nn.ReLU(),
-            nn.Linear(fc2_dims, 1)
-        )
+
+        module_list = []
+        module_list.append(nn.Linear(*input_dims, layer_1_dim))
+        module_list.append(nn.LayerNorm(layer_1_dim))
+        module_list.append(nn.ReLU())
+        previous_dim = layer_1_dim
+
+        for dim in hidden_layer_dims:
+            module_list.append(nn.Linear(previous_dim, dim))
+            module_list.append(nn.LayerNorm(dim))
+            module_list.append(nn.ReLU())
+            previous_dim = dim
+
+        module_list.append(nn.Linear(hidden_layer_dims[-1], 1))
+        module_list.append(nn.Softmax(dim=-1))
+
+        self.critic = nn.Sequential(*module_list)
 
         self.optimizer = optim.Adam(self.parameters(), lr=alpha)
         self.device = torch.device(
@@ -80,39 +110,68 @@ class CriticNetwork(nn.Module):
                 map_location='cpu'))
 
 
+@dataclass
+class AgentConfig:
+    gamma: float
+    alpha: float
+    gae_lambda: float
+    policy_clip: float
+    batch_size: int
+    n_epochs: int
+    layer_1_dim_actor: int = 1024
+    hidden_layer_dims_actor: List[int] = field(default_factory=lambda: [1024])
+    layer_1_dim_critic: int = 2048
+    hidden_layer_dims_critic: List[int] = field(default_factory=lambda: [2048])
+
+
 class Agent:
-    def __init__(self, n_actions, input_dims, fc1_actor=1024, fc2_actor=1024, fc1_critic=2048, fc2_critic=2048, gamma=0.99, alpha=0.0003, gae_lambda=0.95,
-                 policy_clip=0.2, batch_size=64, n_epochs=10, checkpoint_dir='tmp/ppo'):
+    def __init__(self, n_actions, input_dims, config: AgentConfig = None, config_dir='tmp/ppo'):
         self.n_actions = n_actions
         self.input_dims = input_dims
-        self.fc1_actor = fc1_actor
-        self.fc2_actor = fc2_actor
-        self.fc1_critic = fc1_critic
-        self.fc2_critic = fc2_critic
-        self.gamma = gamma
-        self.alpha = alpha
-        self.gamma = gamma
-        self.gae_lambda = gae_lambda
-        self.policy_clip = policy_clip
-        self.batch_size = batch_size
-        self.n_epochs = n_epochs
-        self.n_actions = n_actions
-        self.checkpoint_dir = checkpoint_dir
+
+        self.config = config
+        self.config_dir = config_dir
+        self.config_file = None
+
+        if self.config_dir is not None:
+            self.config_file = os.path.join(
+                self.config_dir, 'agent_config.json')
+
+        if self.config_file is not None and self.config is None:
+            self.load_config()
+
+        assert self.config is not None, "Need to specify config or config path"
+
+        self.initialize_from_config()
+
+    def initialize_from_config(self):
+        self.layer_1_dim_actor = self.config.layer_1_dim_actor
+        self.hidden_layer_dims_actor = self.config.hidden_layer_dims_actor
+        self.layer_1_dim_critic = self.config.layer_1_dim_critic
+        self.hidden_layer_dims_critic = self.config.hidden_layer_dims_critic
+        self.gamma = self.config.gamma
+        self.alpha = self.config.alpha
+        self.gamma = self.config.gamma
+        self.gae_lambda = self.config.gae_lambda
+        self.policy_clip = self.config.policy_clip
+        self.batch_size = self.config.batch_size
+        self.n_epochs = self.config.n_epochs
 
         self.actor = ActorNetwork(
-            n_actions,
-            input_dims,
-            alpha,
-            fc1_dims=fc1_actor,
-            fc2_dims=fc2_actor,
-            chkpt_dir=checkpoint_dir)
+            self.n_actions,
+            self.input_dims,
+            self.alpha,
+            layer_1_dim=self.layer_1_dim_actor,
+            hidden_layer_dims=self.hidden_layer_dims_actor,
+            chkpt_dir=self.config_dir
+        )
         self.critic = CriticNetwork(
-            input_dims,
-            alpha,
-            fc1_dims=fc1_critic,
-            fc2_dims=fc2_critic,
-            chkpt_dir=checkpoint_dir)
-        self.memory = PPOMemory(batch_size)
+            self.input_dims,
+            self.alpha,
+            layer_1_dim=self.layer_1_dim_critic,
+            hidden_layer_dims=self.hidden_layer_dims_critic,
+            chkpt_dir=self.config_dir)
+        self.memory = PPOMemory(self.batch_size)
 
     def remember(self, state, action, probs, vals, reward, done):
         self.memory.store_memory(state, action, probs, vals, reward, done)
@@ -126,6 +185,15 @@ class Agent:
         # print('... loading models ...')
         self.actor.load_checkpoint()
         self.critic.load_checkpoint()
+
+    def load_config(self):
+        with open(self.config_file, 'r') as f:
+            c = json.load(f)
+        self.config = AgentConfig(**c)
+
+    def save_config(self):
+        with open(self.config_file, 'w') as f:
+            json.dump(asdict(self.config), f, indent=4)
 
     def choose_action(self, observation):
         state = torch.tensor(

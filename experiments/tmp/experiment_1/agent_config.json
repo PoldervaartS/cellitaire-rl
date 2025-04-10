@@ -1,0 +1,16 @@
+{
+    "gamma": 0.99,
+    "alpha": 0.0004,
+    "gae_lambda": 0.95,
+    "policy_clip": 0.2,
+    "batch_size": 2000,
+    "n_epochs": 5,
+    "layer_1_dim_actor": 2048,
+    "hidden_layer_dims_actor": [
+        2048
+    ],
+    "layer_1_dim_critic": 4096,
+    "hidden_layer_dims_critic": [
+        4096
+    ]
+}

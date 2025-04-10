@@ -21,7 +21,8 @@ class AgentTrainer:
             self.agent.load_models()
         except Exception as e:
             print('New run, godspeed lad')
-            os.mkdir(checkpoint_dir)
+            if not os.path.isdir(checkpoint_dir):
+                os.mkdir(checkpoint_dir)
             self.agent.save_models()
 
         self.env = env

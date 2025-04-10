@@ -1,37 +1,74 @@
+from dataclasses import asdict, dataclass
+import json
+import os
 import numpy as np
 import pygame
 import time
 from gymnasium import spaces
+from cellitaire.environment.rewards.reward import Reward
 from cellitaire.environment.ui.cellitaire_ui import CellitaireUI
 from cellitaire.game.card import Card
 from cellitaire.game.game import Game
 from cellitaire.environment.ui.event_types import *
 
 
+@dataclass
+class CellitaireEnvConfig:
+    board_rows: int = 7
+    board_cols: int = 12
+    num_reserved: int = 6
+    max_moves: int = 300
+    max_illegal_moves: int = 300
+
+
 class CellitaireEnv:
-    def __init__(self, reward, rows=7, cols=12, num_reserved=6, max_moves=300,
-                 max_illegal_moves=300, render_mode=None, frame_rate=0.2):
+    def __init__(self, reward, config_dir=None, config: CellitaireEnvConfig = None, render_mode=None, frame_rate=0.2):
         self.game = None
+
         self.reward = reward
-        self.rows = rows
-        self.cols = cols
-        self.num_reserved = num_reserved
 
-        self.action_space = spaces.Discrete(rows * cols)
+        self.config_dir = config_dir
+        self.config = config
+        self.config_file = None
 
-        self.num_moves = 0
-        self.max_moves = max_moves
-        self.num_illegal_moves = 0
-        self.max_illegal_moves = max_illegal_moves
+        if self.config_dir is not None:
+            self.config_file = os.path.join(self.config_dir, 'env_config.json')
+        if self.config_file is not None and self.config is None:
+            self.load_config()
 
-        # TODO: this definitely isn't right
-        self.observation_space = spaces.Box(
-            low=0.0, high=53.0, shape=(
-                1, rows * cols + 6))
+        assert self.config is not None, "Need to specify config or config path"
+
+        self.initialize_from_config()
 
         self.render_mode = render_mode
         self.ui = None
         self.frame_rate = frame_rate
+
+    def initialize_from_config(self):
+        self.rows = self.config.board_rows
+        self.cols = self.config.board_cols
+        self.num_reserved = self.config.num_reserved
+
+        self.action_space = spaces.Discrete(self.rows * self.cols)
+
+        self.num_moves = 0
+        self.max_moves = self.config.max_moves
+        self.num_illegal_moves = 0
+        self.max_illegal_moves = self.config.max_illegal_moves
+
+        # TODO: this definitely isn't right
+        self.observation_space = spaces.Box(
+            low=0.0, high=53.0, shape=(
+                1, self.rows * self.cols + 6))
+
+    def load_config(self):
+        with open(self.config_file, 'r') as f:
+            c = json.load(f)
+        self.config = CellitaireEnvConfig(**c)
+
+    def save_config(self):
+        with open(self.config_file, 'w') as f:
+            json.dump(asdict(self.config), f, indent=4)
 
     def reset(self):
         self.game = Game()
