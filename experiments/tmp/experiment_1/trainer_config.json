@@ -1,0 +1,7 @@
+{
+    "steps_per_learn_step": 10000,
+    "batch_size": 2000,
+    "normalize_reward": false,
+    "episodes_between_performance_checks": 100,
+    "max_learn_steps": -1
+}
