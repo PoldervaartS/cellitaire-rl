@@ -1,0 +1,21 @@
+name: cellitaire-rl
+channels:
+  - defaults
+  - conda-forge
+  - nvidia
+dependencies:
+  - python<3.14
+  - numpy
+  - ipykernel
+  - jupyter
+  - matplotlib
+  - gymnasium
+  - pygame
+  - pytest
+  - pip
+  - pip:
+    - --extra-index-url https://download.pytorch.org/whl/cu129
+    - torch
+    - nvidia-cuda-runtime-cu12
+  # FOR CUDA ADD CUDA-TOOLKIT DEPENDENCY
+

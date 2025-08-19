@@ -58,7 +58,7 @@ class StockpileSprite(pygame.sprite.Sprite):
             )
         )
 
-        font = pygame.font.Font(None, 24)
+        font = pygame.font.SysFont('arial', 24)
         card_text = str(self.card)
         text_surface = font.render(
             card_text, True, get_card_text_color(

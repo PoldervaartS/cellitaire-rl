@@ -67,12 +67,14 @@ class Card:
                 return '♦'
             case 'c':
                 return '♣'
+            case _:
+                Exception
 
     def __str__(self):
         """
         Return a simple string representation like 'as' or '10c'.
         """
-        return f"{self.rank}{self.suit}"
+        return f"{self.rank}{Card.suit_to_ascii(self.suit)}"
 
     def __repr__(self):
         """
