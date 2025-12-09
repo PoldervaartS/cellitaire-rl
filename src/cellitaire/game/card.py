@@ -1,3 +1,5 @@
+UNKNOWN_CARD_ID = 53
+
 class Card:
     # Define the order of suits and ranks.
     # We'll use lowercase letters for suits: 's' = spades, 'h' = hearts, 'd' =
@@ -9,14 +11,19 @@ class Card:
         """
         Initialize a card given its unique integer id.
         """
-        if not 0 < card_id <= 52:
+        if not 0 <= card_id <= 53:
             raise ValueError(
-                "card_id must be between 1 and 52 or 0 for 'blank'")
+                "card_id must be between 1 and 52, 53 for 'unknown' or 0 for 'blank'")
         self.card_id = card_id
         # Convert the id into a zero-indexed value for calculations.
-        card_index = card_id - 1
-        suit_index = card_index // 13  # integer division determines suit group
-        rank_index = card_index % 13   # remainder gives the rank within the suit
+        if card_id < 53:
+            card_index = card_id - 1
+            suit_index = card_index // 13  # integer division determines suit group
+            rank_index = card_index % 13   # remainder gives the rank within the suit
+        else:
+            card_index = -1
+            suit_index = 0
+            rank_index = 0
         self.suit = Card.SUITS[suit_index]
         self.rank = Card.RANKS[rank_index]
 

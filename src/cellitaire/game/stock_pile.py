@@ -1,6 +1,6 @@
 import random
 
-from cellitaire.game.card import Card
+from cellitaire.game.card import Card, UNKNOWN_CARD_ID
 
 
 class StockPile:
@@ -11,6 +11,7 @@ class StockPile:
         :param cards: A list of Card objects representing the stock pile.
         """
         self.cards = cards
+        self.initialize_known_cards()
 
     @classmethod
     def create_stock_pile(cls, reserve_n: int):
@@ -49,6 +50,7 @@ class StockPile:
         :return: The Card object that was drawn, or None if the pile is empty.
         """
         if self.cards:
+            self.known_cards.pop(0)
             return self.cards.pop(0)
         return None
 
@@ -59,6 +61,7 @@ class StockPile:
         :param card: The Card object to be placed.
         """
         self.cards.append(card)
+        self.known_cards.append(card)
 
     def count(self):
         """
@@ -67,7 +70,13 @@ class StockPile:
         :return: An integer count of cards.
         """
         return len(self.cards)
+    
+    def initialize_known_cards(self):
+        self.known_cards = [self.cards[0]] + [Card(UNKNOWN_CARD_ID) for card in range(len(self.cards) - 1)]
 
+    def get_stockpile_state(self):
+        return [card.card_id for card in self.known_cards] + [Card(0).card_id] * (52 - len(self.known_cards))
+    
     def __str__(self):
         return f"StockPile({self.count()} cards)"
 

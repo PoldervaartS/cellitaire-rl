@@ -128,10 +128,8 @@ class CellitaireEnv:
         return board_state.flatten()
 
     def get_stockpile_state(self):
-        top_card = self.game.stockpile.top_card()
-        top_card_id = top_card.card_id if top_card is not None else 0
         return np.array(
-            [top_card_id, self.game.stockpile.count()], dtype=np.float32)
+            self.game.stockpile.get_stockpile_state() + [self.game.stockpile.count()], dtype=np.float32)
 
     def get_foundation_state(self):
         foundation_values = [

@@ -1,0 +1,7 @@
+{
+    "board_rows": 7,
+    "board_cols": 12,
+    "num_reserved": 6,
+    "max_moves": 1200,
+    "max_illegal_moves": 1200
+}

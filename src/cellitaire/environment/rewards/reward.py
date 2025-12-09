@@ -7,7 +7,7 @@ class Reward:
         self.prev_state: ndarray | None = None
         self.weight = weight
         self.stockpile_start = rows * cols
-        self.foundation_start = self.stockpile_start + 2
+        self.foundation_start = self.stockpile_start + 53
         self.lonely_start = self.foundation_start + 4
         self.suffocated_start = self.lonely_start + rows * cols
         self.placeable_start = self.suffocated_start + rows * cols
@@ -21,7 +21,7 @@ class Reward:
         return state[self.lonely_start:].sum().item()
 
     def get_stockpile_cards_count(self, state):
-        return state[self.stockpile_start + 1].item()
+        return state[self.stockpile_start + 52].item()
 
     def get_foundation_cards_count(self, state):
         return state[self.foundation_start:self.foundation_start + 4].sum().item()
